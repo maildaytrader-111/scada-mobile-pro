@@ -73,18 +73,6 @@
                 "name": "Load",
                 "value": "350"
             }
-        ],
-        "exa": [
-            {
-                "type": "Parameter",
-                "name": "I",
-                "value": ""
-            },
-            {
-                "type": "Formula",
-                "name": "Electrical Power",
-                "value": ""
-            }
         ]
     },
     "rca_db": {

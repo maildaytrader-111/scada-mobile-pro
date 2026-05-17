@@ -1,23 +1,29 @@
-// =====================================================
-// SCADA MOBILE PRO
-// COMPLETE UPGRADED APP.JS
-// WITH FORMULA CHAIN ENGINE
-// =====================================================
+// static/app.js
 
 // =====================================================
-// GLOBAL DATABASES
+// GLOBALS
 // =====================================================
-
-let parameterData = {};
-let formulaData = [];
-let formDatabase = {};
-let rcaDatabase = {};
 
 let currentFormula = null;
 
+let parameterData = {};
+
+let formulaData = [];
+
 let formRows = [];
 
-let chainRows = [];
+let rcaData = {};
+
+// =====================================================
+// INIT
+// =====================================================
+
+window.onload = async function(){
+
+    await refreshDatabase();
+
+    await loadRCA();
+};
 
 // =====================================================
 // REFRESH DATABASE
@@ -37,34 +43,51 @@ async function refreshDatabase(){
     formulaData =
         db.formulas;
 
-    formDatabase =
-        db.forms;
+    renderParameters(
+        parameterData
+    );
 
-    rcaDatabase =
-        db.rca;
+    renderFormulas(
+        formulaData
+    );
 
-    renderParameters(parameterData);
-
-    renderFormulas(formulaData);
-
-    renderFormulaDropdown();
-
-    renderFormList(formDatabase);
-
-    renderRCA(rcaDatabase);
+    updateFormulaDropdown(
+        formulaData
+    );
 }
 
 // =====================================================
-// =====================================================
-// PARAMETER ENGINE
-// =====================================================
+// UPDATE SOLVER DROPDOWN
 // =====================================================
 
+function updateFormulaDropdown(formulas){
+
+    const dd =
+        document.getElementById(
+            "formulaSelect"
+        );
+
+    dd.innerHTML =
+        `<option value="">
+            Select Formula
+        </option>`;
+
+    formulas.forEach(f => {
+
+        dd.innerHTML += `
+
+            <option value="${f.name}">
+                ${f.name}
+            </option>
+        `;
+    });
+}
+
 // =====================================================
-// RENDER PARAMETERS
+// PARAMETER DATABASE
 // =====================================================
 
-function renderParameters(data, filter=""){
+function renderParameters(parameters, filter=""){
 
     const area =
         document.getElementById(
@@ -73,16 +96,22 @@ function renderParameters(data, filter=""){
 
     area.innerHTML = "";
 
-    for(const key in data){
+    for(const key in parameters){
 
-        const p = data[key];
+        const p =
+            parameters[key];
 
         const text =
-            `${key} → ${p.name} (${p.unit})`;
+            (
+                key + " " +
+                p.name + " " +
+                p.unit
+            ).toLowerCase();
 
         if(
-            !text.toLowerCase()
-            .includes(filter.toLowerCase())
+            !text.includes(
+                filter.toLowerCase()
+            )
         ){
             continue;
         }
@@ -93,9 +122,9 @@ function renderParameters(data, filter=""){
         row.className =
             "d-flex gap-2 mt-2";
 
-        // =============================================
-        // LOAD BUTTON
-        // =============================================
+        // =========================================
+        // MAIN BUTTON
+        // =========================================
 
         const btn =
             document.createElement("button");
@@ -103,27 +132,27 @@ function renderParameters(data, filter=""){
         btn.className =
             "btn btn-secondary flex-grow-1";
 
-        btn.innerHTML =
-            text;
+        btn.innerHTML = `
+
+            <b>${key}</b>
+
+            (${p.unit})
+
+            <br>
+
+            ${p.name}
+        `;
 
         btn.onclick = () => {
 
-            document.getElementById(
-                "paramKey"
-            ).value = key;
-
-            document.getElementById(
-                "paramName"
-            ).value = p.name;
-
-            document.getElementById(
-                "paramUnit"
-            ).value = p.unit;
+            loadParameterIntoEditor(
+                key
+            );
         };
 
-        // =============================================
-        // DELETE BUTTON
-        // =============================================
+        // =========================================
+        // DELETE
+        // =========================================
 
         const del =
             document.createElement("button");
@@ -131,7 +160,8 @@ function renderParameters(data, filter=""){
         del.className =
             "btn btn-danger";
 
-        del.innerHTML = "X";
+        del.innerHTML =
+            "X";
 
         del.onclick = async () => {
 
@@ -149,6 +179,7 @@ function renderParameters(data, filter=""){
                     },
 
                     body:JSON.stringify({
+
                         key:key
                     })
                 }
@@ -183,6 +214,28 @@ function filterParameters(){
 }
 
 // =====================================================
+// LOAD PARAMETER
+// =====================================================
+
+function loadParameterIntoEditor(key){
+
+    const p =
+        parameterData[key];
+
+    document.getElementById(
+        "paramKey"
+    ).value = key;
+
+    document.getElementById(
+        "paramName"
+    ).value = p.name;
+
+    document.getElementById(
+        "paramUnit"
+    ).value = p.unit;
+}
+
+// =====================================================
 // CLEAR PARAMETER
 // =====================================================
 
@@ -202,7 +255,7 @@ function clearParameterEditor(){
 }
 
 // =====================================================
-// ADD PARAMETER
+// SAVE PARAMETER
 // =====================================================
 
 async function addParameter(){
@@ -285,16 +338,10 @@ async function deleteParameter(){
 }
 
 // =====================================================
-// =====================================================
-// FORMULA ENGINE
-// =====================================================
+// FORMULA DATABASE
 // =====================================================
 
-// =====================================================
-// RENDER FORMULAS
-// =====================================================
-
-function renderFormulas(data, filter=""){
+function renderFormulas(formulas, filter=""){
 
     const area =
         document.getElementById(
@@ -303,14 +350,18 @@ function renderFormulas(data, filter=""){
 
     area.innerHTML = "";
 
-    data.forEach(f => {
+    formulas.forEach(f => {
 
         const text =
-            `${f.name} → ${f.eq}`;
+            (
+                f.name + " " +
+                f.eq
+            ).toLowerCase();
 
         if(
-            !text.toLowerCase()
-            .includes(filter.toLowerCase())
+            !text.includes(
+                filter.toLowerCase()
+            )
         ){
             return;
         }
@@ -321,33 +372,33 @@ function renderFormulas(data, filter=""){
         row.className =
             "d-flex gap-2 mt-2";
 
-        // =============================================
-        // LOAD
-        // =============================================
+        // =========================================
+        // MAIN BUTTON
+        // =========================================
 
         const btn =
             document.createElement("button");
 
         btn.className =
-            "btn btn-secondary flex-grow-1";
+            "btn btn-info flex-grow-1";
 
-        btn.innerHTML =
-            text;
+        btn.innerHTML = `
+
+            <b>${f.name}</b>
+
+            <br>
+
+            ${f.eq}
+        `;
 
         btn.onclick = () => {
 
-            document.getElementById(
-                "formulaName"
-            ).value = f.name;
-
-            document.getElementById(
-                "formulaEq"
-            ).value = f.eq;
+            loadFormulaIntoEditor(f);
         };
 
-        // =============================================
+        // =========================================
         // DELETE
-        // =============================================
+        // =========================================
 
         const del =
             document.createElement("button");
@@ -355,7 +406,8 @@ function renderFormulas(data, filter=""){
         del.className =
             "btn btn-danger";
 
-        del.innerHTML = "X";
+        del.innerHTML =
+            "X";
 
         del.onclick = async () => {
 
@@ -408,6 +460,21 @@ function filterFormulas(){
 }
 
 // =====================================================
+// LOAD FORMULA
+// =====================================================
+
+function loadFormulaIntoEditor(f){
+
+    document.getElementById(
+        "formulaName"
+    ).value = f.name;
+
+    document.getElementById(
+        "formulaEq"
+    ).value = f.eq;
+}
+
+// =====================================================
 // CLEAR FORMULA
 // =====================================================
 
@@ -423,7 +490,7 @@ function clearFormulaEditor(){
 }
 
 // =====================================================
-// ADD FORMULA
+// SAVE FORMULA
 // =====================================================
 
 async function addFormula(){
@@ -499,44 +566,23 @@ async function deleteFormula(){
 }
 
 // =====================================================
-// FORMULA DROPDOWN
+// LOAD SOLVER FORMULA
 // =====================================================
 
-function renderFormulaDropdown(){
-
-    const dd =
-        document.getElementById(
-            "formulaSelect"
-        );
-
-    dd.innerHTML =
-        "<option value=''>Select Formula</option>";
-
-    formulaData.forEach(f => {
-
-        const op =
-            document.createElement(
-                "option"
-            );
-
-        op.value = f.name;
-
-        op.innerHTML = f.name;
-
-        dd.appendChild(op);
-    });
-}
-
-// =====================================================
-// LOAD FORMULA
-// =====================================================
-
-function loadFormula(){
+async function loadFormula(){
 
     const name =
         document.getElementById(
             "formulaSelect"
         ).value;
+
+    const response =
+        await fetch(
+            "/get_formula/" + name
+        );
+
+    currentFormula =
+        await response.json();
 
     const area =
         document.getElementById(
@@ -545,40 +591,20 @@ function loadFormula(){
 
     area.innerHTML = "";
 
-    currentFormula =
-        formulaData.find(
-
-            f => f.name === name
-        );
-
-    if(!currentFormula)
-        return;
-
     currentFormula.params.forEach(p => {
 
         const div =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         div.className =
             "mb-2";
 
-        const info =
-            parameterData[p] || {};
-
         div.innerHTML = `
 
-            <label>
+            <label>${p}</label>
 
-                ${p}
-                ${info.name || ""}
-                (${info.unit || ""})
-
-            </label>
-
-            <input id="solve_${p}"
-                   class="form-control">
+            <input class="form-control"
+                   id="input_${p}">
         `;
 
         area.appendChild(div);
@@ -591,16 +617,13 @@ function loadFormula(){
 
 async function solveFormula(){
 
-    if(!currentFormula)
-        return;
-
-    const vals = {};
+    const values = {};
 
     currentFormula.params.forEach(p => {
 
-        vals[p] =
+        values[p] =
             document.getElementById(
-                `solve_${p}`
+                "input_" + p
             ).value;
     });
 
@@ -619,7 +642,7 @@ async function solveFormula(){
                 equation:
                 currentFormula.eq,
 
-                values:vals
+                values:values
             })
         });
 
@@ -628,490 +651,78 @@ async function solveFormula(){
 
     document.getElementById(
         "solverResult"
-    ).innerHTML = data.result;
+    ).innerHTML =
+        data.result;
 }
 
-// =====================================================
 // =====================================================
 // FORM ENGINE
-// =====================================================
-// =====================================================
-
-// =====================================================
-// CLEAR FORM
-// =====================================================
-
-function clearFormEditor(){
-
-    document.getElementById(
-        "formName"
-    ).value = "";
-
-    document.getElementById(
-        "formTableBody"
-    ).innerHTML = "";
-
-    formRows = [];
-}
-
-// =====================================================
-// ADD FORM ROW
 // =====================================================
 
 function addFormRow(data=null){
 
-    const body =
+    const area =
         document.getElementById(
-            "formTableBody"
+            "formArea"
         );
 
-    const tr =
-        document.createElement("tr");
+    const row =
+        document.createElement("div");
 
-    tr.innerHTML = `
+    row.className =
+        "card p-2 mt-2";
 
-        <td>
+    row.innerHTML = `
 
-            <select class="form-select rowType">
+        <select class="form-select mb-2 rowType">
 
-                <option>
-                    Parameter
-                </option>
+            <option>
+                Parameter
+            </option>
 
-                <option>
-                    Formula
-                </option>
+            <option>
+                Formula
+            </option>
 
-            </select>
+        </select>
 
-        </td>
+        <input class="form-control mb-2 rowName"
+               placeholder="Name">
 
-        <td>
+        <input class="form-control rowValue"
+               placeholder="Value">
 
-            <select class="form-select rowName">
-
-            </select>
-
-        </td>
-
-        <td>
-
-            <input class="form-control rowValue">
-
-        </td>
-
-        <td>
-
-            <button class="btn btn-danger">
-
-                X
-
-            </button>
-
-        </td>
+        <button class="btn btn-danger mt-2">
+            Delete
+        </button>
     `;
 
-    body.appendChild(tr);
+    area.appendChild(row);
 
-    const typeSelect =
-        tr.querySelector(
-            ".rowType"
-        );
+    const delBtn =
+        row.querySelector("button");
 
-    const nameSelect =
-        tr.querySelector(
-            ".rowName"
-        );
+    delBtn.onclick = () => {
 
-    const valueBox =
-        tr.querySelector(
-            ".rowValue"
-        );
-
-    // =================================================
-    // UPDATE OPTIONS
-    // =================================================
-
-    function updateOptions(){
-
-        nameSelect.innerHTML = "";
-
-        if(typeSelect.value === "Parameter"){
-
-            valueBox.readOnly = false;
-
-            for(const key in parameterData){
-
-                const op =
-                    document.createElement(
-                        "option"
-                    );
-
-                const p =
-                    parameterData[key];
-
-                op.value = key;
-
-                op.innerHTML =
-                    `${key} → ${p.name}`;
-
-                nameSelect.appendChild(op);
-            }
-        }
-
-        else{
-
-            valueBox.readOnly = true;
-
-            formulaData.forEach(f => {
-
-                const op =
-                    document.createElement(
-                        "option"
-                    );
-
-                op.value = f.name;
-
-                op.innerHTML = f.name;
-
-                nameSelect.appendChild(op);
-            });
-        }
-
-        $(nameSelect).select2({
-
-            width:'100%'
-        });
-    }
-
-    updateOptions();
-
-    // =================================================
-    // TYPE CHANGE
-    // =================================================
-
-    typeSelect.onchange = () => {
-
-        updateOptions();
+        row.remove();
     };
-
-    // =================================================
-    // FORMULA AUTO PARAMS
-    // =================================================
-
-    nameSelect.onchange = () => {
-
-        if(typeSelect.value !== "Formula")
-            return;
-
-        const formula =
-            formulaData.find(
-
-                f => f.name === nameSelect.value
-            );
-
-        if(!formula)
-            return;
-
-        formula.params.forEach(p => {
-
-            let exists = false;
-
-            formRows.forEach(r => {
-
-                const t =
-                    r.querySelector(
-                        ".rowType"
-                    ).value;
-
-                const n =
-                    r.querySelector(
-                        ".rowName"
-                    ).value;
-
-                if(
-                    t === "Parameter"
-                    &&
-                    n === p
-                ){
-                    exists = true;
-                }
-            });
-
-            if(exists)
-                return;
-
-            addFormRow({
-
-                type:"Parameter",
-
-                name:p,
-
-                value:""
-            });
-        });
-    };
-
-    // =================================================
-    // DELETE
-    // =================================================
-
-    tr.querySelector("button")
-    .onclick = () => {
-
-        tr.remove();
-    };
-
-    // =================================================
-    // LOAD DATA
-    // =================================================
 
     if(data){
 
-        typeSelect.value =
-            data.type;
+        row.querySelector(
+            ".rowType"
+        ).value = data.type;
 
-        updateOptions();
+        row.querySelector(
+            ".rowName"
+        ).value = data.name;
 
-        nameSelect.value =
-            data.name;
-
-        $(nameSelect).trigger("change");
-
-        valueBox.value =
-            data.value || "";
-
-        if(data.type === "Formula"){
-
-            valueBox.readOnly = true;
-        }
+        row.querySelector(
+            ".rowValue"
+        ).value = data.value;
     }
 
-    formRows.push(tr);
-}
-
-// =====================================================
-// SAVE FORM
-// =====================================================
-
-async function saveForm(){
-
-    const formName =
-        document.getElementById(
-            "formName"
-        ).value;
-
-    if(!formName){
-
-        alert("Enter form name");
-
-        return;
-    }
-
-    const rows = [];
-
-    formRows.forEach(tr => {
-
-        rows.push({
-
-            type:
-            tr.querySelector(
-                ".rowType"
-            ).value,
-
-            name:
-            tr.querySelector(
-                ".rowName"
-            ).value,
-
-            value:
-            tr.querySelector(
-                ".rowValue"
-            ).value
-        });
-    });
-
-    await fetch("/save_form", {
-
-        method:"POST",
-
-        headers:{
-            "Content-Type":
-            "application/json"
-        },
-
-        body:JSON.stringify({
-
-            form_name:formName,
-
-            rows:rows
-        })
-    });
-
-    alert("Form Saved");
-
-    refreshDatabase();
-}
-
-// =====================================================
-// LOAD FORM
-// =====================================================
-
-function loadForm(name){
-
-    clearFormEditor();
-
-    document.getElementById(
-        "formName"
-    ).value = name;
-
-    const rows =
-        formDatabase[name];
-
-    rows.forEach(r => {
-
-        addFormRow(r);
-    });
-}
-
-// =====================================================
-// DELETE FORM
-// =====================================================
-
-async function deleteForm(){
-
-    const name =
-        document.getElementById(
-            "formName"
-        ).value;
-
-    if(!name){
-
-        alert("Select form");
-
-        return;
-    }
-
-    await fetch("/delete_form", {
-
-        method:"POST",
-
-        headers:{
-            "Content-Type":
-            "application/json"
-        },
-
-        body:JSON.stringify({
-
-            name:name
-        })
-    });
-
-    clearFormEditor();
-
-    refreshDatabase();
-}
-
-// =====================================================
-// FILTER FORMS
-// =====================================================
-
-function filterForms(){
-
-    const text =
-        document.getElementById(
-            "formSearch"
-        ).value
-        .toLowerCase();
-
-    renderFormList(
-        formDatabase,
-        text
-    );
-}
-
-// =====================================================
-// RENDER FORM LIST
-// =====================================================
-
-function renderFormList(forms, filter=""){
-
-    const area =
-        document.getElementById(
-            "formList"
-        );
-
-    area.innerHTML = "";
-
-    for(const name in forms){
-
-        if(
-            !name.toLowerCase()
-            .includes(
-                filter.toLowerCase()
-            )
-        ){
-            continue;
-        }
-
-        const row =
-            document.createElement("div");
-
-        row.className =
-            "d-flex gap-2 mt-2";
-
-        const btn =
-            document.createElement("button");
-
-        btn.className =
-            "btn btn-secondary flex-grow-1";
-
-        btn.innerHTML = name;
-
-        btn.onclick = () => {
-
-            loadForm(name);
-        };
-
-        const del =
-            document.createElement("button");
-
-        del.className =
-            "btn btn-danger";
-
-        del.innerHTML = "X";
-
-        del.onclick = async () => {
-
-            await fetch(
-
-                "/delete_form",
-
-                {
-
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":
-                        "application/json"
-                    },
-
-                    body:JSON.stringify({
-
-                        name:name
-                    })
-                }
-            );
-
-            refreshDatabase();
-        };
-
-        row.appendChild(btn);
-
-        row.appendChild(del);
-
-        area.appendChild(row);
-    }
+    formRows.push(row);
 }
 
 // =====================================================
@@ -1122,70 +733,60 @@ async function solveForm(){
 
     const inputs = {};
 
-    // =============================================
-    // COLLECT PARAMETERS
-    // =============================================
+    // PARAMETERS
 
-    formRows.forEach(tr => {
+    formRows.forEach(row => {
 
         const type =
-            tr.querySelector(
+            row.querySelector(
                 ".rowType"
             ).value;
 
-        if(type !== "Parameter")
-            return;
-
         const name =
-            tr.querySelector(
+            row.querySelector(
                 ".rowName"
             ).value;
 
         const value =
-            tr.querySelector(
+            row.querySelector(
                 ".rowValue"
             ).value;
 
-        inputs[name] = value;
+        if(type === "Parameter"){
+
+            inputs[name] = value;
+        }
     });
 
-    // =============================================
-    // SOLVE FORMULAS
-    // =============================================
+    // FORMULAS
 
-    for(const tr of formRows){
+    for(const row of formRows){
 
         const type =
-            tr.querySelector(
+            row.querySelector(
                 ".rowType"
             ).value;
 
         if(type !== "Formula")
             continue;
 
-        const formulaName =
-            tr.querySelector(
+        const name =
+            row.querySelector(
                 ".rowName"
             ).value;
 
         const valueBox =
-            tr.querySelector(
+            row.querySelector(
                 ".rowValue"
             );
 
         const formula =
             formulaData.find(
-
-                f => f.name === formulaName
+                f => f.name === name
             );
 
-        if(!formula){
-
-            valueBox.value =
-                "Formula Not Found";
-
+        if(!formula)
             continue;
-        }
 
         const response =
             await fetch("/solve", {
@@ -1214,329 +815,94 @@ async function solveForm(){
 }
 
 // =====================================================
-// =====================================================
-// FORMULA CHAIN ENGINE
-// =====================================================
+// SAVE FORM
 // =====================================================
 
-// =====================================================
-// CLEAR CHAIN
-// =====================================================
+async function saveForm(){
 
-function clearChain(){
-
-    document.getElementById(
-        "chainTableBody"
-    ).innerHTML = "";
-
-    document.getElementById(
-        "chainResults"
-    ).innerHTML = "";
-
-    chainRows = [];
-}
-
-// =====================================================
-// ADD CHAIN ROW
-// =====================================================
-
-function addChainRow(){
-
-    const body =
+    const formName =
         document.getElementById(
-            "chainTableBody"
-        );
+            "formName"
+        ).value;
 
-    const tr =
-        document.createElement("tr");
+    const rows = [];
 
-    tr.innerHTML = `
+    formRows.forEach(row => {
 
-        <td>
+        rows.push({
 
-            <select class="form-select chainFormula">
+            type:
+            row.querySelector(
+                ".rowType"
+            ).value,
 
-            </select>
+            name:
+            row.querySelector(
+                ".rowName"
+            ).value,
 
-        </td>
-
-        <td class="chainOutput">
-        </td>
-
-        <td>
-
-            <input class="form-control chainValue"
-                   readonly>
-
-        </td>
-
-        <td>
-
-            <button class="btn btn-danger">
-                X
-            </button>
-
-        </td>
-    `;
-
-    body.appendChild(tr);
-
-    const formulaSelect =
-        tr.querySelector(
-            ".chainFormula"
-        );
-
-    const outputCell =
-        tr.querySelector(
-            ".chainOutput"
-        );
-
-    formulaData.forEach(f => {
-
-        const op =
-            document.createElement("option");
-
-        op.value = f.name;
-
-        op.innerHTML =
-            `${f.name} → ${f.eq}`;
-
-        formulaSelect.appendChild(op);
-    });
-
-    $(formulaSelect).select2({
-        width:'100%'
-    });
-
-    function updateOutput(){
-
-        const formula =
-            formulaData.find(
-                f => f.name === formulaSelect.value
-            );
-
-        if(!formula)
-            return;
-
-        outputCell.innerHTML =
-            formula.eq.split("=")[0].trim();
-    }
-
-    updateOutput();
-
-    formulaSelect.onchange =
-        updateOutput;
-
-    tr.querySelector("button")
-    .onclick = () => {
-
-        tr.remove();
-    };
-
-    chainRows.push(tr);
-}
-
-// =====================================================
-// SOLVE FORMULA CHAIN
-// =====================================================
-
-async function solveFormulaChain(){
-
-    const resultsArea =
-        document.getElementById(
-            "chainResults"
-        );
-
-    resultsArea.innerHTML = "";
-
-    // =============================================
-    // COLLECT ALL PARAMETERS
-    // =============================================
-
-    const allParams = new Set();
-
-    chainRows.forEach(tr => {
-
-        const formulaName =
-            tr.querySelector(
-                ".chainFormula"
-            ).value;
-
-        const formula =
-            formulaData.find(
-                f => f.name === formulaName
-            );
-
-        if(!formula)
-            return;
-
-        formula.params.forEach(p => {
-
-            allParams.add(p);
+            value:
+            row.querySelector(
+                ".rowValue"
+            ).value
         });
     });
 
-    // =============================================
-    // ASK INPUTS
-    // =============================================
+    await fetch("/save_form", {
 
-    const values = {};
+        method:"POST",
 
-    for(const p of allParams){
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
 
-        const val =
-            prompt(
-                `Enter value for ${p}`
-            );
+        body:JSON.stringify({
 
-        values[p] = val;
-    }
+            form_name:formName,
 
-    // =============================================
-    // MULTI PASS SOLVER
-    // =============================================
+            rows:rows
+        })
+    });
 
-    for(let i=0; i<5; i++){
+    alert("Form Saved");
 
-        for(const tr of chainRows){
+    location.reload();
+}
 
-            const formulaName =
-                tr.querySelector(
-                    ".chainFormula"
-                ).value;
+// =====================================================
+// LOAD FORM
+// =====================================================
 
-            const valueBox =
-                tr.querySelector(
-                    ".chainValue"
-                );
+async function loadSavedForm(){
 
-            const formula =
-                formulaData.find(
-                    f => f.name === formulaName
-                );
+    const name =
+        document.getElementById(
+            "savedForms"
+        ).value;
 
-            if(!formula)
-                continue;
+    const response =
+        await fetch(
+            "/load_form/" + name
+        );
 
-            const response =
-                await fetch("/solve", {
+    const rows =
+        await response.json();
 
-                    method:"POST",
+    document.getElementById(
+        "formArea"
+    ).innerHTML = "";
 
-                    headers:{
-                        "Content-Type":
-                        "application/json"
-                    },
+    formRows = [];
 
-                    body:JSON.stringify({
+    rows.forEach(r => {
 
-                        equation:
-                        formula.eq,
-
-                        values:values
-                    })
-                });
-
-            const data =
-                await response.json();
-
-            valueBox.value =
-                data.result;
-
-            // =========================================
-            // FEED OUTPUT
-            // =========================================
-
-            if(data.result.includes("=")){
-
-                const parts =
-                    data.result.split("=");
-
-                const key =
-                    parts[0].trim();
-
-                const val =
-                    parts[1].trim();
-
-                values[key] = val;
-            }
-        }
-    }
-
-    // =============================================
-    // FINAL RESULTS
-    // =============================================
-
-    let html = "";
-
-    for(const k in values){
-
-        html += `
-
-            <div class="card p-2 mt-2">
-
-                ${k} = ${values[k]}
-
-            </div>
-        `;
-    }
-
-    resultsArea.innerHTML =
-        html;
+        addFormRow(r);
+    });
 }
 
 // =====================================================
 // RCA ENGINE
-// =====================================================
-
-function renderRCA(data){
-
-    const area =
-        document.getElementById(
-            "rcaList"
-        );
-
-    area.innerHTML = "";
-
-    for(const p in data){
-
-        const row =
-            document.createElement("div");
-
-        row.className =
-            "d-flex gap-2 mt-2";
-
-        const btn =
-            document.createElement("button");
-
-        btn.className =
-            "btn btn-secondary flex-grow-1";
-
-        btn.innerHTML = p;
-
-        btn.onclick = () => {
-
-            document.getElementById(
-                "rcaParam"
-            ).value = p;
-
-            document.getElementById(
-                "highReasons"
-            ).value = data[p].high;
-
-            document.getElementById(
-                "lowReasons"
-            ).value = data[p].low;
-        };
-
-        row.appendChild(btn);
-
-        area.appendChild(row);
-    }
-}
-
-// =====================================================
-// SAVE RCA
 // =====================================================
 
 async function saveRCA(){
@@ -1544,17 +910,23 @@ async function saveRCA(){
     const parameter =
         document.getElementById(
             "rcaParam"
-        ).value;
+        ).value.trim();
 
     const high =
         document.getElementById(
             "highReasons"
-        ).value;
+        ).value
+        .split(",")
+        .map(x => x.trim())
+        .filter(x => x);
 
     const low =
         document.getElementById(
             "lowReasons"
-        ).value;
+        ).value
+        .split(",")
+        .map(x => x.trim())
+        .filter(x => x);
 
     await fetch("/save_rca", {
 
@@ -1575,7 +947,9 @@ async function saveRCA(){
         })
     });
 
-    refreshDatabase();
+    clearRCAEditor();
+
+    loadRCA();
 }
 
 // =====================================================
@@ -1591,7 +965,7 @@ async function deleteRCA(){
 
     if(!parameter){
 
-        alert("Select RCA");
+        alert("Select parameter");
 
         return;
     }
@@ -1613,7 +987,7 @@ async function deleteRCA(){
 
     clearRCAEditor();
 
-    refreshDatabase();
+    loadRCA();
 }
 
 // =====================================================
@@ -1636,16 +1010,25 @@ function clearRCAEditor(){
 }
 
 // =====================================================
-// FILTER RCA
+// LOAD RCA
 // =====================================================
 
-function filterRCA(){
+async function loadRCA(){
 
-    const text =
-        document.getElementById(
-            "rcaSearch"
-        ).value
-        .toLowerCase();
+    const response =
+        await fetch("/get_rca");
+
+    rcaData =
+        await response.json();
+
+    renderRCAList();
+}
+
+// =====================================================
+// RENDER RCA
+// =====================================================
+
+function renderRCAList(filter=""){
 
     const area =
         document.getElementById(
@@ -1654,57 +1037,338 @@ function filterRCA(){
 
     area.innerHTML = "";
 
-    for(const p in rcaDatabase){
+    const mode =
+        document.getElementById(
+            "rcaMode"
+        ).value;
 
-        const high =
-            rcaDatabase[p].high
-            .toLowerCase();
+    // =============================================
+    // PARAMETER -> CAUSES
+    // =============================================
 
-        const low =
-            rcaDatabase[p].low
-            .toLowerCase();
+    if(mode === "Parameter → Causes"){
 
-        if(
-            !p.toLowerCase().includes(text)
-            &&
-            !high.includes(text)
-            &&
-            !low.includes(text)
-        ){
-            continue;
+        for(const param in rcaData){
+
+            if(
+                !param.toLowerCase()
+                .includes(
+                    filter.toLowerCase()
+                )
+            ){
+                continue;
+            }
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "d-flex gap-2 mt-2";
+
+            const btn =
+                document.createElement("button");
+
+            btn.className =
+                "btn btn-secondary flex-grow-1";
+
+            btn.innerHTML =
+                param;
+
+            btn.onclick = () => {
+
+                showParameterCauses(
+                    param
+                );
+            };
+
+            const edit =
+                document.createElement("button");
+
+            edit.className =
+                "btn btn-warning";
+
+            edit.innerHTML =
+                "Edit";
+
+            edit.onclick = () => {
+
+                loadRCAIntoEditor(
+                    param
+                );
+            };
+
+            const del =
+                document.createElement("button");
+
+            del.className =
+                "btn btn-danger";
+
+            del.innerHTML =
+                "X";
+
+            del.onclick = async () => {
+
+                await fetch(
+
+                    "/delete_rca",
+
+                    {
+
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                            "application/json"
+                        },
+
+                        body:JSON.stringify({
+
+                            parameter:param
+                        })
+                    }
+                );
+
+                loadRCA();
+            };
+
+            row.appendChild(btn);
+
+            row.appendChild(edit);
+
+            row.appendChild(del);
+
+            area.appendChild(row);
         }
+    }
 
-        const btn =
-            document.createElement(
-                "button"
+    // =============================================
+    // CAUSE -> PARAMETERS
+    // =============================================
+
+    else{
+
+        const causes =
+            new Set();
+
+        for(const param in rcaData){
+
+            rcaData[param].high
+            .forEach(c =>
+                causes.add(c)
             );
 
-        btn.className =
-            "btn btn-secondary w-100 mt-2";
+            rcaData[param].low
+            .forEach(c =>
+                causes.add(c)
+            );
+        }
 
-        btn.innerHTML = p;
+        causes.forEach(cause => {
 
-        btn.onclick = () => {
+            if(
+                !cause.toLowerCase()
+                .includes(
+                    filter.toLowerCase()
+                )
+            ){
+                return;
+            }
 
-            document.getElementById(
-                "rcaParam"
-            ).value = p;
+            const btn =
+                document.createElement("button");
 
-            document.getElementById(
-                "highReasons"
-            ).value = rcaDatabase[p].high;
+            btn.className =
+                "btn btn-info w-100 mt-2";
 
-            document.getElementById(
-                "lowReasons"
-            ).value = rcaDatabase[p].low;
-        };
+            btn.innerHTML =
+                cause;
 
-        area.appendChild(btn);
+            btn.onclick = () => {
+
+                showCauseParameters(
+                    cause
+                );
+            };
+
+            area.appendChild(btn);
+        });
     }
 }
 
 // =====================================================
-// STARTUP
+// FILTER RCA
 // =====================================================
 
-refreshDatabase();
+function filterRCA(){
+
+    const text =
+        document.getElementById(
+            "rcaSearch"
+        ).value;
+
+    renderRCAList(text);
+}
+
+// =====================================================
+// LOAD RCA EDITOR
+// =====================================================
+
+function loadRCAIntoEditor(param){
+
+    const data =
+        rcaData[param];
+
+    document.getElementById(
+        "rcaParam"
+    ).value = param;
+
+    document.getElementById(
+        "highReasons"
+    ).value =
+        data.high.join(", ");
+
+    document.getElementById(
+        "lowReasons"
+    ).value =
+        data.low.join(", ");
+}
+
+// =====================================================
+// SHOW PARAMETER CAUSES
+// =====================================================
+
+function showParameterCauses(param){
+
+    const area =
+        document.getElementById(
+            "rcaResults"
+        );
+
+    const data =
+        rcaData[param];
+
+    area.innerHTML = `
+
+        <div class="card p-3 mt-2">
+
+            <h4>${param}</h4>
+
+            <hr>
+
+            <h5 class="text-danger">
+                HIGH Causes
+            </h5>
+
+            <ul>
+
+                ${data.high
+                    .map(x => `<li>${x}</li>`)
+                    .join("")}
+
+            </ul>
+
+            <h5 class="text-primary">
+                LOW Causes
+            </h5>
+
+            <ul>
+
+                ${data.low
+                    .map(x => `<li>${x}</li>`)
+                    .join("")}
+
+            </ul>
+
+        </div>
+    `;
+}
+
+// =====================================================
+// SHOW CAUSE PARAMETERS
+// =====================================================
+
+function showCauseParameters(cause){
+
+    const area =
+        document.getElementById(
+            "rcaResults"
+        );
+
+    let html = `
+
+        <div class="card p-3 mt-2">
+
+            <h4>${cause}</h4>
+
+            <hr>
+    `;
+
+    for(const param in rcaData){
+
+        if(
+            rcaData[param].high
+            .includes(cause)
+        ){
+
+            html += `
+
+                <div class="mb-2">
+
+                    🔺 ${param}
+                    → HIGH
+
+                </div>
+            `;
+        }
+
+        if(
+            rcaData[param].low
+            .includes(cause)
+        ){
+
+            html += `
+
+                <div class="mb-2">
+
+                    🔻 ${param}
+                    → LOW
+
+                </div>
+            `;
+        }
+    }
+
+    html += "</div>";
+
+    area.innerHTML = html;
+}
+
+// =====================================================
+// RCA MODE CHANGE
+// =====================================================
+
+document.addEventListener(
+
+    "DOMContentLoaded",
+
+    () => {
+
+        const mode =
+            document.getElementById(
+                "rcaMode"
+            );
+
+        if(mode){
+
+            mode.addEventListener(
+
+                "change",
+
+                () => {
+
+                    renderRCAList();
+                }
+            );
+        }
+    }
+);

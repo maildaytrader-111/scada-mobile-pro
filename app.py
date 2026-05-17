@@ -1,16 +1,9 @@
-# =====================================================
-# SCADA MOBILE PRO
-# COMPLETE APP.PY
-# =====================================================
+# app.py
 
 from flask import Flask, render_template, request, jsonify
 import sympy as sp
 import json
 import os
-
-# =====================================================
-# FLASK APP
-# =====================================================
 
 app = Flask(__name__)
 
@@ -19,10 +12,6 @@ app = Flask(__name__)
 # =====================================================
 
 DATA_FILE = "scada_auto_save.json"
-
-# =====================================================
-# GLOBAL DATABASES
-# =====================================================
 
 formula_db = []
 param_db = {}
@@ -103,7 +92,6 @@ def extract_params(eq):
             str(s)
 
             for s in parsed.free_symbols
-
         ])
 
     except:
@@ -199,13 +187,27 @@ def safe_solver(eq_str, inputs):
 
                 return f"{target} = {round(float(sol[0]), 5)}"
 
-            return "No Solution"
+            return "No solution"
+
+        # =============================================
+        # NO UNKNOWN
+        # =============================================
+
+        elif len(unknown) == 0:
+
+            result = eq.subs(known)
+
+            if result == True:
+
+                return "Equation satisfied"
+
+            return str(result)
 
         # =============================================
         # MULTIPLE UNKNOWN
         # =============================================
 
-        elif len(unknown) > 1:
+        else:
 
             return "Missing: " + ", ".join([
 
@@ -213,16 +215,6 @@ def safe_solver(eq_str, inputs):
 
                 for x in unknown
             ])
-
-        # =============================================
-        # NO UNKNOWN
-        # =============================================
-
-        else:
-
-            result = eq.subs(known)
-
-            return str(result)
 
     except Exception as e:
 
@@ -334,11 +326,11 @@ def add_formula():
 
     params = extract_params(eq)
 
-    updated = False
-
     # =============================================
     # UPDATE IF EXISTS
     # =============================================
+
+    updated = False
 
     for f in formula_db:
 
@@ -353,7 +345,7 @@ def add_formula():
             break
 
     # =============================================
-    # ADD NEW
+    # NEW FORMULA
     # =============================================
 
     if not updated:
@@ -402,7 +394,7 @@ def delete_formula():
     })
 
 # =====================================================
-# GET SINGLE FORMULA
+# GET FORMULA
 # =====================================================
 
 @app.route("/get_formula/<name>")
@@ -417,7 +409,7 @@ def get_formula(name):
     return jsonify({})
 
 # =====================================================
-# SOLVER API
+# SOLVER
 # =====================================================
 
 @app.route("/solve", methods=["POST"])
@@ -475,30 +467,6 @@ def load_form(name):
     rows = form_db.get(name, [])
 
     return jsonify(rows)
-
-# =====================================================
-# DELETE FORM
-# =====================================================
-
-@app.route("/delete_form", methods=["POST"])
-def delete_form():
-
-    global form_db
-
-    data = request.json
-
-    name = data["name"]
-
-    if name in form_db:
-
-        del form_db[name]
-
-    save_data()
-
-    return jsonify({
-
-        "status":"ok"
-    })
 
 # =====================================================
 # SAVE RCA
