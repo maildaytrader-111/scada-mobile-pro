@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+
+```
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>SCADA MOBILE PRO</title>
+
+<!-- Bootstrap -->
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet">
+
+<!-- Select2 -->
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+      rel="stylesheet" />
+
+<style>
+
+    body{
+        background:#1e1e2f;
+        color:white;
+        padding:10px;
+    }
+
+    .card{
+        background:#2d2d44;
+        color:white;
+        border:none;
+        border-radius:15px;
+    }
+
+    .form-control,
+    .form-select{
+        background:#1b1b2d;
+        color:white;
+        border:1px solid #444;
+    }
+
+    .form-control:focus,
+    .form-select:focus{
+        background:#1b1b2d;
+        color:white;
+    }
+
+    .nav-tabs .nav-link{
+        color:white;
+    }
+
+    .nav-tabs .nav-link.active{
+        background:#00c896;
+        color:black;
+        border:none;
+    }
+
+    .btn{
+        border-radius:10px;
+    }
+
+    textarea{
+        min-height:100px;
+    }
+
+    table td,
+    table th{
+        vertical-align:middle;
+    }
+
+    #solverResult{
+        min-height:80px;
+        white-space:pre-wrap;
+    }
+
+    .select2-container--default .select2-selection--single{
+        background:#1b1b2d;
+        border:1px solid #444;
+        color:white;
+        height:38px;
+    }
+
+    .select2-selection__rendered{
+        color:white !important;
+        line-height:38px !important;
+    }
+
+    .select2-selection__arrow{
+        height:38px !important;
+    }
+
+    .select2-dropdown{
+        background:#1b1b2d;
+        color:white;
+    }
+
+    .select2-search__field{
+        background:#1b1b2d !important;
+        color:white !important;
+    }
+
+</style>
+```
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+
+```
+<h2 class="text-center mb-3">
+    SCADA MOBILE PRO
+</h2>
+
+<!-- ================================================= -->
+<!-- NAVIGATION -->
+<!-- ================================================= -->
+
+<ul class="nav nav-tabs mb-3">
+
+    <li class="nav-item">
+        <button class="nav-link active"
+                data-bs-toggle="tab"
+                data-bs-target="#backendTab">
+            Backend
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link"
+                data-bs-toggle="tab"
+                data-bs-target="#solverTab">
+            Solver
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link"
+                data-bs-toggle="tab"
+                data-bs-target="#formTab">
+            Forms
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link"
+                data-bs-toggle="tab"
+                data-bs-target="#chainTab">
+            Formula Chain
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link"
+                data-bs-toggle="tab"
+                data-bs-target="#rcaTab">
+            RCA
+        </button>
+    </li>
+
+</ul>
+
+<!-- ================================================= -->
+<!-- TAB CONTENT -->
+<!-- ================================================= -->
+
+<div class="tab-content">
+
+    <!-- ================================================= -->
+    <!-- BACKEND TAB -->
+    <!-- ================================================= -->
+
+    <div class="tab-pane fade show active"
+         id="backendTab">
+
+        <div class="card p-3 mb-3">
+
+            <h4>Parameter Database</h4>
+
+            <input id="paramKey"
+                   class="form-control mb-2"
+                   placeholder="Parameter Key">
+
+            <input id="paramName"
+                   class="form-control mb-2"
+                   placeholder="Parameter Name">
+
+            <input id="paramUnit"
+                   class="form-control mb-2"
+                   placeholder="Unit">
+
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+
+                <button class="btn btn-success"
+                        onclick="addParameter()">
+                    Save
+                </button>
+
+                <button class="btn btn-warning"
+                        onclick="clearParameterEditor()">
+                    Clear
+                </button>
+
+                <button class="btn btn-danger"
+                        onclick="deleteParameter()">
+                    Delete
+                </button>
+
+            </div>
+
+            <input id="paramSearch"
+                   class="form-control mb-2"
+                   placeholder="Search Parameter"
+                   onkeyup="filterParameters()">
+
+            <div id="paramList"></div>
+
+        </div>
+
+        <div class="card p-3">
+
+            <h4>Formula Database</h4>
+
+            <input id="formulaName"
+                   class="form-control mb-2"
+                   placeholder="Formula Name">
+
+            <input id="formulaEq"
+                   class="form-control mb-2"
+                   placeholder="Example: FLOW=DP*K">
+
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+
+                <button class="btn btn-primary"
+                        onclick="addFormula()">
+                    Save
+                </button>
+
+                <button class="btn btn-warning"
+                        onclick="clearFormulaEditor()">
+                    Clear
+                </button>
+
+                <button class="btn btn-danger"
+                        onclick="deleteFormula()">
+                    Delete
+                </button>
+
+            </div>
+
+            <input id="formulaSearch"
+                   class="form-control mb-2"
+                   placeholder="Search Formula"
+                   onkeyup="filterFormulas()">
+
+            <div id="formulaList"></div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- SOLVER TAB -->
+    <!-- ================================================= -->
+
+    <div class="tab-pane fade"
+         id="solverTab">
+
+        <div class="card p-3">
+
+            <h4>Engineering Solver</h4>
+
+            <select id="formulaSelect"
+                    class="form-select mb-3">
+
+                <option value="">
+                    Select Formula
+                </option>
+
+            </select>
+
+            <button class="btn btn-info mb-3"
+                    onclick="loadFormula()">
+                Load Formula
+            </button>
+
+            <div id="solverInputs"></div>
+
+            <button class="btn btn-success mt-3"
+                    onclick="solveFormula()">
+                Solve
+            </button>
+
+            <div class="card p-3 mt-3"
+                 id="solverResult"></div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- FORM TAB -->
+    <!-- ================================================= -->
+
+    <div class="tab-pane fade"
+         id="formTab">
+
+        <div class="card p-3">
+
+            <h4>Engineering Logbook</h4>
+
+            <input id="formName"
+                   class="form-control mb-2"
+                   placeholder="Form Name">
+
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+
+                <button class="btn btn-info"
+                        onclick="addFormRow()">
+                    Add Row
+                </button>
+
+                <button class="btn btn-success"
+                        onclick="solveForm()">
+                    Solve
+                </button>
+
+                <button class="btn btn-warning"
+                        onclick="saveForm()">
+                    Save
+                </button>
+
+                <button class="btn btn-secondary"
+                        onclick="clearFormEditor()">
+                    Clear
+                </button>
+
+                <button class="btn btn-danger"
+                        onclick="deleteForm()">
+                    Delete
+                </button>
+
+            </div>
+
+            <input id="formSearch"
+                   class="form-control mb-3"
+                   placeholder="Search Form"
+                   onkeyup="filterForms()">
+
+            <div id="formList"
+                 class="mb-3"></div>
+
+            <div class="table-responsive">
+
+                <table class="table table-dark table-bordered align-middle">
+
+                    <thead>
+
+                    <tr>
+                        <th width="15%">Type</th>
+                        <th width="40%">Name</th>
+                        <th width="35%">Value</th>
+                        <th width="10%">Action</th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="formTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- FORMULA CHAIN TAB -->
+    <!-- ================================================= -->
+
+    <div class="tab-pane fade"
+         id="chainTab">
+
+        <div class="card p-3">
+
+            <h4>Formula Chain Engine</h4>
+
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+
+                <button class="btn btn-success"
+                        onclick="addChainRow()">
+                    Add Formula
+                </button>
+
+                <button class="btn btn-primary"
+                        onclick="solveFormulaChain()">
+                    Solve Chain
+                </button>
+
+                <button class="btn btn-warning"
+                        onclick="clearChain()">
+                    Clear
+                </button>
+
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-dark table-bordered">
+
+                    <thead>
+                    <tr>
+                        <th width="35%">Formula</th>
+                        <th width="25%">Output</th>
+                        <th width="30%">Value</th>
+                        <th width="10%">Action</th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="chainTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <hr>
+
+            <h5>Calculated Chain Values</h5>
+
+            <div id="chainResults"></div>
+
+        </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- RCA TAB -->
+    <!-- ================================================= -->
+
+    <div class="tab-pane fade"
+         id="rcaTab">
+
+        <div class="card p-3">
+
+            <h4>RCA Intelligence</h4>
+
+            <input id="rcaParam"
+                   class="form-control mb-2"
+                   placeholder="Parameter">
+
+            <textarea id="highReasons"
+                      class="form-control mb-2"
+                      placeholder="HIGH Causes"></textarea>
+
+            <textarea id="lowReasons"
+                      class="form-control mb-2"
+                      placeholder="LOW Causes"></textarea>
+
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+
+                <button class="btn btn-danger"
+                        onclick="saveRCA()">
+                    Save RCA
+                </button>
+
+                <button class="btn btn-warning"
+                        onclick="clearRCAEditor()">
+                    Clear
+                </button>
+
+                <button class="btn btn-dark"
+                        onclick="deleteRCA()">
+                    Delete
+                </button>
+
+            </div>
+
+            <input id="rcaSearch"
+                   class="form-control mb-2"
+                   placeholder="Search RCA"
+                   onkeyup="filterRCA()">
+
+            <div id="rcaList"></div>
+
+            <div id="rcaResults"
+                 class="mt-3"></div>
+
+        </div>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- Bootstrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- JQuery -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Select2 -->
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- APP JS -->
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>

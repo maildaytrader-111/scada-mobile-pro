@@ -1,0 +1,51 @@
+body{
+
+    background:#1e1e2f;
+    color:white;
+}
+
+.card{
+
+    background:#2c2c3f;
+    border:none;
+    border-radius:12px;
+    color:white;
+}
+
+.form-control,
+.form-select{
+
+    background:#3b3b4f;
+    border:none;
+    color:white;
+}
+
+.form-control:focus,
+.form-select:focus{
+
+    background:#3b3b4f;
+    color:white;
+    box-shadow:none;
+}
+
+.nav-tabs{
+
+    border-bottom:1px solid #444;
+}
+
+.nav-link{
+
+    color:white;
+}
+
+.nav-link.active{
+
+    background:#00c896 !important;
+    color:white !important;
+    border:none;
+}
+
+button{
+
+    border:none !important;
+}

@@ -1,0 +1,116 @@
+{
+    "formula_db": [
+        {
+            "name": "Electrical Power",
+            "eq": "P = V * I",
+            "params": [
+                "P",
+                "V",
+                "I"
+            ]
+        },
+        {
+            "name": "Pressure Drop",
+            "eq": "DP = K * FLOW**2",
+            "params": [
+                "DP",
+                "K",
+                "FLOW"
+            ]
+        },
+        {
+            "name": "Distance formula",
+            "eq": "d=s*t",
+            "params": [
+                "d",
+                "s",
+                "t"
+            ]
+        }
+    ],
+    "param_db": {
+        "V": {
+            "name": "Voltage",
+            "unit": "Volt"
+        },
+        "I": {
+            "name": "Current",
+            "unit": "Amp"
+        },
+        "P": {
+            "name": "Power",
+            "unit": "Watt"
+        },
+        "FLOW": {
+            "name": "Steam Flow",
+            "unit": "TPH"
+        },
+        "DP": {
+            "name": "Pressure Drop",
+            "unit": "bar"
+        },
+        "K": {
+            "name": "Resistance Constant",
+            "unit": "-"
+        },
+        "d": {
+            "name": "distance",
+            "unit": "km"
+        },
+        "s": {
+            "name": "speed",
+            "unit": "km/h"
+        },
+        "t": {
+            "name": "time",
+            "unit": "h"
+        }
+    },
+    "form_db": {
+        "Boiler": [
+            {
+                "type": "Parameter",
+                "name": "Load",
+                "value": "350"
+            }
+        ],
+        "exa": [
+            {
+                "type": "Parameter",
+                "name": "I",
+                "value": ""
+            },
+            {
+                "type": "Formula",
+                "name": "Electrical Power",
+                "value": ""
+            }
+        ]
+    },
+    "rca_db": {
+        "heat rate": {
+            "high": [
+                "scc"
+            ],
+            "low": [
+                "        soc"
+            ]
+        },
+        "Unit Load": {
+            "high": [
+                "Mill Started"
+            ],
+            "low": [
+                "Mill Stopped"
+            ]
+        },
+        "Drum level": {
+            "high": [
+                "Mill Stopped"
+            ],
+            "low": [
+                "Mill Started"
+            ]
+        }
+    }
+}
