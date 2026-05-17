@@ -16,6 +16,15 @@ let currentFormula = null;
 let formRows = [];
 
 // =====================================================
+// TOAST
+// =====================================================
+
+function toast(msg){
+
+    alert(msg);
+}
+
+// =====================================================
 // REFRESH DATABASE
 // =====================================================
 
@@ -28,16 +37,16 @@ async function refreshDatabase(){
         await response.json();
 
     parameterData =
-        db.parameters;
+        db.parameters || {};
 
     formulaData =
-        db.formulas;
+        db.formulas || [];
 
     formDatabase =
-        db.forms;
+        db.forms || {};
 
     rcaDatabase =
-        db.rca;
+        db.rca || {};
 
     renderParameters(parameterData);
 
@@ -54,10 +63,6 @@ async function refreshDatabase(){
 // =====================================================
 // PARAMETER ENGINE
 // =====================================================
-// =====================================================
-
-// =====================================================
-// RENDER PARAMETERS
 // =====================================================
 
 function renderParameters(data, filter=""){
@@ -124,6 +129,13 @@ function renderParameters(data, filter=""){
 
         del.onclick = async () => {
 
+            const ok =
+                confirm(
+                    `Delete parameter "${key}" ?`
+                );
+
+            if(!ok) return;
+
             await fetch(
 
                 "/delete_parameter",
@@ -154,10 +166,6 @@ function renderParameters(data, filter=""){
     }
 }
 
-// =====================================================
-// FILTER PARAMETERS
-// =====================================================
-
 function filterParameters(){
 
     const text =
@@ -170,10 +178,6 @@ function filterParameters(){
         text
     );
 }
-
-// =====================================================
-// CLEAR PARAMETER
-// =====================================================
 
 function clearParameterEditor(){
 
@@ -189,10 +193,6 @@ function clearParameterEditor(){
         "paramUnit"
     ).value = "";
 }
-
-// =====================================================
-// ADD PARAMETER
-// =====================================================
 
 async function addParameter(){
 
@@ -210,6 +210,23 @@ async function addParameter(){
         document.getElementById(
             "paramUnit"
         ).value;
+
+    if(!key || !name){
+
+        toast("Enter parameter details");
+
+        return;
+    }
+
+    if(parameterData[key]){
+
+        const ok =
+            confirm(
+                "Parameter exists. Overwrite?"
+            );
+
+        if(!ok) return;
+    }
 
     await fetch("/add_parameter", {
 
@@ -233,11 +250,9 @@ async function addParameter(){
     clearParameterEditor();
 
     refreshDatabase();
-}
 
-// =====================================================
-// DELETE PARAMETER
-// =====================================================
+    toast("Parameter Saved");
+}
 
 async function deleteParameter(){
 
@@ -248,10 +263,17 @@ async function deleteParameter(){
 
     if(!key){
 
-        alert("Select parameter");
+        toast("Select parameter");
 
         return;
     }
+
+    const ok =
+        confirm(
+            `Delete parameter "${key}" ?`
+        );
+
+    if(!ok) return;
 
     await fetch("/delete_parameter", {
 
@@ -277,10 +299,6 @@ async function deleteParameter(){
 // =====================================================
 // FORMULA ENGINE
 // =====================================================
-// =====================================================
-
-// =====================================================
-// RENDER FORMULAS
 // =====================================================
 
 function renderFormulas(data, filter=""){
@@ -341,6 +359,13 @@ function renderFormulas(data, filter=""){
 
         del.onclick = async () => {
 
+            const ok =
+                confirm(
+                    `Delete formula "${f.name}" ?`
+                );
+
+            if(!ok) return;
+
             await fetch(
 
                 "/delete_formula",
@@ -372,10 +397,6 @@ function renderFormulas(data, filter=""){
     });
 }
 
-// =====================================================
-// FILTER FORMULAS
-// =====================================================
-
 function filterFormulas(){
 
     const text =
@@ -389,10 +410,6 @@ function filterFormulas(){
     );
 }
 
-// =====================================================
-// CLEAR FORMULA
-// =====================================================
-
 function clearFormulaEditor(){
 
     document.getElementById(
@@ -403,10 +420,6 @@ function clearFormulaEditor(){
         "formulaEq"
     ).value = "";
 }
-
-// =====================================================
-// ADD FORMULA
-// =====================================================
 
 async function addFormula(){
 
@@ -419,6 +432,28 @@ async function addFormula(){
         document.getElementById(
             "formulaEq"
         ).value;
+
+    if(!name || !eq){
+
+        toast("Enter formula details");
+
+        return;
+    }
+
+    const exists =
+        formulaData.find(
+            f => f.name === name
+        );
+
+    if(exists){
+
+        const ok =
+            confirm(
+                "Formula exists. Overwrite?"
+            );
+
+        if(!ok) return;
+    }
 
     await fetch("/add_formula", {
 
@@ -440,11 +475,9 @@ async function addFormula(){
     clearFormulaEditor();
 
     refreshDatabase();
-}
 
-// =====================================================
-// DELETE FORMULA
-// =====================================================
+    toast("Formula Saved");
+}
 
 async function deleteFormula(){
 
@@ -455,10 +488,17 @@ async function deleteFormula(){
 
     if(!name){
 
-        alert("Select formula");
+        toast("Select formula");
 
         return;
     }
+
+    const ok =
+        confirm(
+            `Delete formula "${name}" ?`
+        );
+
+    if(!ok) return;
 
     await fetch("/delete_formula", {
 
@@ -619,10 +659,6 @@ async function solveFormula(){
 // =====================================================
 // =====================================================
 
-// =====================================================
-// CLEAR FORM
-// =====================================================
-
 function clearFormEditor(){
 
     document.getElementById(
@@ -635,10 +671,6 @@ function clearFormEditor(){
 
     formRows = [];
 }
-
-// =====================================================
-// ADD FORM ROW
-// =====================================================
 
 function addFormRow(data=null){
 
@@ -698,6 +730,9 @@ function addFormRow(data=null){
     tr.querySelector("button")
     .onclick = () => {
 
+        formRows =
+            formRows.filter(r => r !== tr);
+
         tr.remove();
     };
 
@@ -716,17 +751,14 @@ function addFormRow(data=null){
             ".rowValue"
         );
 
-    // =================================================
-    // UPDATE OPTIONS
-    // =================================================
-
     function updateOptions(){
 
-        nameSelect.innerHTML = "";
+        if ($(nameSelect).hasClass("select2-hidden-accessible")) {
 
-        // =============================================
-        // PARAMETER MODE
-        // =============================================
+            $(nameSelect).select2('destroy');
+        }
+
+        nameSelect.innerHTML = "";
 
         if(typeSelect.value === "Parameter"){
 
@@ -751,10 +783,6 @@ function addFormRow(data=null){
             }
         }
 
-        // =============================================
-        // FORMULA MODE
-        // =============================================
-
         else{
 
             valueBox.readOnly = true;
@@ -774,10 +802,6 @@ function addFormRow(data=null){
             });
         }
 
-        // =============================================
-        // SEARCHABLE SELECT2
-        // =============================================
-
         $(nameSelect).select2({
 
             width:'100%'
@@ -786,18 +810,10 @@ function addFormRow(data=null){
 
     updateOptions();
 
-    // =================================================
-    // TYPE CHANGE
-    // =================================================
-
     typeSelect.onchange = () => {
 
         updateOptions();
     };
-
-    // =================================================
-    // FORMULA AUTO PARAMS
-    // =================================================
 
     nameSelect.onchange = () => {
 
@@ -852,10 +868,6 @@ function addFormRow(data=null){
         });
     };
 
-    // =================================================
-    // LOAD EXISTING DATA
-    // =================================================
-
     if(data){
 
         typeSelect.value =
@@ -893,7 +905,7 @@ async function saveForm(){
 
     if(!formName){
 
-        alert("Enter form name");
+        toast("Enter form name");
 
         return;
     }
@@ -902,6 +914,13 @@ async function saveForm(){
 
     formRows.forEach(tr => {
 
+        const rowName =
+            tr.querySelector(
+                ".rowName"
+            ).value;
+
+        if(!rowName) return;
+
         rows.push({
 
             type:
@@ -909,10 +928,7 @@ async function saveForm(){
                 ".rowType"
             ).value,
 
-            name:
-            tr.querySelector(
-                ".rowName"
-            ).value,
+            name:rowName,
 
             value:
             tr.querySelector(
@@ -938,7 +954,7 @@ async function saveForm(){
         })
     });
 
-    alert("Form Saved");
+    toast("Form Saved");
 
     refreshDatabase();
 }
@@ -958,6 +974,13 @@ function loadForm(name){
     const rows =
         formDatabase[name];
 
+    if(!rows){
+
+        toast("Form not found");
+
+        return;
+    }
+
     rows.forEach(r => {
 
         addFormRow(r);
@@ -968,19 +991,29 @@ function loadForm(name){
 // DELETE FORM
 // =====================================================
 
-async function deleteForm(){
-
-    const name =
-        document.getElementById(
-            "formName"
-        ).value;
+async function deleteForm(name=null){
 
     if(!name){
 
-        alert("Select form");
+        name =
+            document.getElementById(
+                "formName"
+            ).value;
+    }
+
+    if(!name){
+
+        toast("Select form");
 
         return;
     }
+
+    const ok =
+        confirm(
+            `Delete form "${name}" ?`
+        );
+
+    if(!ok) return;
 
     await fetch("/delete_form", {
 
@@ -997,7 +1030,13 @@ async function deleteForm(){
         })
     });
 
-    clearFormEditor();
+    if(
+        document.getElementById(
+            "formName"
+        ).value === name
+    ){
+        clearFormEditor();
+    }
 
     refreshDatabase();
 }
@@ -1073,29 +1112,9 @@ function renderFormList(forms, filter=""){
         del.innerHTML =
             "X";
 
-        del.onclick = async () => {
+        del.onclick = () => {
 
-            await fetch(
-
-                "/delete_form",
-
-                {
-
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":
-                        "application/json"
-                    },
-
-                    body:JSON.stringify({
-
-                        name:name
-                    })
-                }
-            );
-
-            refreshDatabase();
+            deleteForm(name);
         };
 
         row.appendChild(btn);
@@ -1113,10 +1132,6 @@ function renderFormList(forms, filter=""){
 async function solveForm(){
 
     const inputs = {};
-
-    // =============================================
-    // COLLECT PARAMETERS
-    // =============================================
 
     formRows.forEach(tr => {
 
@@ -1140,10 +1155,6 @@ async function solveForm(){
 
         inputs[name] = value;
     });
-
-    // =============================================
-    // SOLVE FORMULAS
-    // =============================================
 
     for(const tr of formRows){
 
@@ -1202,6 +1213,11 @@ async function solveForm(){
 
         valueBox.value =
             data.result;
+
+        inputs[
+            formula.eq.split("=")[0]
+            .trim()
+        ] = data.result;
     }
 }
 
@@ -1255,10 +1271,6 @@ function renderRCA(data){
     }
 }
 
-// =====================================================
-// SAVE RCA
-// =====================================================
-
 async function saveRCA(){
 
     const parameter =
@@ -1296,11 +1308,9 @@ async function saveRCA(){
     });
 
     refreshDatabase();
-}
 
-// =====================================================
-// DELETE RCA
-// =====================================================
+    toast("RCA Saved");
+}
 
 async function deleteRCA(){
 
@@ -1311,7 +1321,7 @@ async function deleteRCA(){
 
     if(!parameter){
 
-        alert("Select RCA");
+        toast("Select RCA");
 
         return;
     }
@@ -1336,10 +1346,6 @@ async function deleteRCA(){
     refreshDatabase();
 }
 
-// =====================================================
-// CLEAR RCA
-// =====================================================
-
 function clearRCAEditor(){
 
     document.getElementById(
@@ -1354,10 +1360,6 @@ function clearRCAEditor(){
         "lowReasons"
     ).value = "";
 }
-
-// =====================================================
-// FILTER RCA
-// =====================================================
 
 function filterRCA(){
 
@@ -1377,11 +1379,11 @@ function filterRCA(){
     for(const p in rcaDatabase){
 
         const high =
-            rcaDatabase[p].high
+            (rcaDatabase[p].high || "")
             .toLowerCase();
 
         const low =
-            rcaDatabase[p].low
+            (rcaDatabase[p].low || "")
             .toLowerCase();
 
         if(

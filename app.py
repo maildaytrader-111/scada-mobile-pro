@@ -1,4 +1,8 @@
-# app.py
+# =====================================================
+# SCADA MOBILE PRO
+# COMPLETE UPGRADED APP.PY
+# =====================================================
+
 from supabase import create_client
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
@@ -6,22 +10,28 @@ import sympy as sp
 import json
 import os
 
+# =====================================================
+# FLASK
+# =====================================================
+
 app = Flask(__name__)
+
+# =====================================================
+# ENV
+# =====================================================
+
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-@app.route("/test")
-def test():
-    data = supabase.table("parameters").select("*").execute()
-    return str(data.data)
-
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
 
 # =====================================================
-# DATABASE FILE
+# LOCAL BACKUP DATABASE
 # =====================================================
 
 DATA_FILE = "scada_auto_save.json"
@@ -32,7 +42,7 @@ form_db = {}
 rca_db = {}
 
 # =====================================================
-# LOAD DATABASE
+# LOAD LOCAL DATA
 # =====================================================
 
 def load_data():
@@ -69,7 +79,7 @@ def load_data():
             )
 
 # =====================================================
-# SAVE DATABASE
+# SAVE LOCAL BACKUP
 # =====================================================
 
 def save_data():
@@ -89,7 +99,7 @@ def save_data():
         }, f, indent=4)
 
 # =====================================================
-# EXTRACT PARAMETERS
+# PARAM EXTRACTOR
 # =====================================================
 
 def extract_params(eq):
@@ -112,7 +122,7 @@ def extract_params(eq):
         return []
 
 # =====================================================
-# SMART SOLVER
+# SAFE SOLVER
 # =====================================================
 
 def safe_solver(eq_str, inputs):
@@ -173,17 +183,27 @@ def safe_solver(eq_str, inputs):
 
                 try:
 
+                    clean_val = str(val)
+
+                    if "=" in clean_val:
+
+                        clean_val = (
+                            clean_val
+                            .split("=")[-1]
+                            .strip()
+                        )
+
                     known[
                         symbols[k]
-                    ] = float(val)
+                    ] = float(clean_val)
 
                 except:
 
                     pass
 
-        # =============================================
+        # =================================================
         # SINGLE UNKNOWN
-        # =============================================
+        # =================================================
 
         if len(unknown) == 1:
 
@@ -198,13 +218,16 @@ def safe_solver(eq_str, inputs):
 
             if sol:
 
-                return f"{target} = {round(float(sol[0]), 5)}"
+                return round(
+                    float(sol[0]),
+                    5
+                )
 
             return "No solution"
 
-        # =============================================
+        # =================================================
         # NO UNKNOWN
-        # =============================================
+        # =================================================
 
         elif len(unknown) == 0:
 
@@ -216,9 +239,9 @@ def safe_solver(eq_str, inputs):
 
             return str(result)
 
-        # =============================================
+        # =================================================
         # MULTIPLE UNKNOWN
-        # =============================================
+        # =================================================
 
         else:
 
@@ -234,11 +257,90 @@ def safe_solver(eq_str, inputs):
         return f"Error: {str(e)}"
 
 # =====================================================
+# SYNC SUPABASE
+# =====================================================
+
+def sync_from_supabase():
+
+    global param_db
+    global formula_db
+    global form_db
+
+    try:
+
+        # =============================================
+        # PARAMETERS
+        # =============================================
+
+        params = supabase.table(
+            "parameters"
+        ).select("*").execute()
+
+        param_db = {}
+
+        for p in params.data:
+
+            param_db[p["key"]] = {
+
+                "name": p["name"],
+
+                "unit": p["unit"]
+            }
+
+        # =============================================
+        # FORMULAS
+        # =============================================
+
+        formulas = supabase.table(
+            "formulas"
+        ).select("*").execute()
+
+        formula_db = []
+
+        for f in formulas.data:
+
+            formula_db.append({
+
+                "name": f["name"],
+
+                "eq": f["equation"],
+
+                "params": extract_params(
+                    f["equation"]
+                )
+            })
+
+        # =============================================
+        # FORMS
+        # =============================================
+
+        forms = supabase.table(
+            "forms"
+        ).select("*").execute()
+
+        form_db = {}
+
+        for f in forms.data:
+
+            form_db[
+                f["form_name"]
+            ] = f["form_data"]
+
+    except Exception as e:
+
+        print(
+            "SUPABASE LOAD ERROR:",
+            str(e)
+        )
+
+# =====================================================
 # HOME
 # =====================================================
 
 @app.route("/")
 def home():
+
+    sync_from_supabase()
 
     return render_template(
 
@@ -254,11 +356,26 @@ def home():
     )
 
 # =====================================================
+# TEST
+# =====================================================
+
+@app.route("/test")
+def test():
+
+    data = supabase.table(
+        "parameters"
+    ).select("*").execute()
+
+    return jsonify(data.data)
+
+# =====================================================
 # GET DATABASE
 # =====================================================
 
 @app.route("/get_database")
 def get_database():
+
+    sync_from_supabase()
 
     return jsonify({
 
@@ -272,7 +389,7 @@ def get_database():
     })
 
 # =====================================================
-# ADD / UPDATE PARAMETER
+# ADD PARAMETER
 # =====================================================
 
 @app.route("/add_parameter", methods=["POST"])
@@ -284,12 +401,39 @@ def add_parameter():
 
     key = data["key"]
 
+    name = data["name"]
+
+    unit = data["unit"]
+
     param_db[key] = {
 
-        "name": data["name"],
+        "name": name,
 
-        "unit": data["unit"]
+        "unit": unit
     }
+
+    try:
+
+        supabase.table(
+            "parameters"
+        ).upsert({
+
+            "key": key,
+
+            "name": name,
+
+            "unit": unit
+
+        }).execute()
+
+    except Exception as e:
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
+        })
 
     save_data()
 
@@ -315,6 +459,21 @@ def delete_parameter():
 
         del param_db[key]
 
+    try:
+
+        supabase.table(
+            "parameters"
+        ).delete().eq(
+
+            "key",
+            key
+
+        ).execute()
+
+    except Exception as e:
+
+        print(e)
+
     save_data()
 
     return jsonify({
@@ -323,7 +482,7 @@ def delete_parameter():
     })
 
 # =====================================================
-# ADD / UPDATE FORMULA
+# ADD FORMULA
 # =====================================================
 
 @app.route("/add_formula", methods=["POST"])
@@ -339,10 +498,6 @@ def add_formula():
 
     params = extract_params(eq)
 
-    # =============================================
-    # UPDATE IF EXISTS
-    # =============================================
-
     updated = False
 
     for f in formula_db:
@@ -357,10 +512,6 @@ def add_formula():
 
             break
 
-    # =============================================
-    # NEW FORMULA
-    # =============================================
-
     if not updated:
 
         formula_db.append({
@@ -370,6 +521,27 @@ def add_formula():
             "eq": eq,
 
             "params": params
+        })
+
+    try:
+
+        supabase.table(
+            "formulas"
+        ).upsert({
+
+            "name": name,
+
+            "equation": eq
+
+        }).execute()
+
+    except Exception as e:
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
         })
 
     save_data()
@@ -398,6 +570,21 @@ def delete_formula():
 
         if f["name"] != name
     ]
+
+    try:
+
+        supabase.table(
+            "formulas"
+        ).delete().eq(
+
+            "name",
+            name
+
+        ).execute()
+
+    except Exception as e:
+
+        print(e)
 
     save_data()
 
@@ -463,6 +650,27 @@ def save_form():
 
     form_db[form_name] = rows
 
+    try:
+
+        supabase.table(
+            "forms"
+        ).upsert({
+
+            "form_name": form_name,
+
+            "form_data": rows
+
+        }).execute()
+
+    except Exception as e:
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
+        })
+
     save_data()
 
     return jsonify({
@@ -480,6 +688,45 @@ def load_form(name):
     rows = form_db.get(name, [])
 
     return jsonify(rows)
+
+# =====================================================
+# DELETE FORM
+# =====================================================
+
+@app.route("/delete_form", methods=["POST"])
+def delete_form():
+
+    global form_db
+
+    data = request.json
+
+    name = data["name"]
+
+    if name in form_db:
+
+        del form_db[name]
+
+    try:
+
+        supabase.table(
+            "forms"
+        ).delete().eq(
+
+            "form_name",
+            name
+
+        ).execute()
+
+    except Exception as e:
+
+        print(e)
+
+    save_data()
+
+    return jsonify({
+
+        "status":"deleted"
+    })
 
 # =====================================================
 # SAVE RCA
@@ -548,6 +795,8 @@ def delete_rca():
 if __name__ == "__main__":
 
     load_data()
+
+    sync_from_supabase()
 
     app.run(
 
