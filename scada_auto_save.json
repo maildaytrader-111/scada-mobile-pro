@@ -64,6 +64,10 @@
         "t": {
             "name": "time",
             "unit": "h"
+        },
+        "": {
+            "name": "",
+            "unit": ""
         }
     },
     "form_db": {
