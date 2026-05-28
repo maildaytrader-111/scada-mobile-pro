@@ -10,14 +10,10 @@ import sympy as sp
 import json
 import os
 
-# =====================================================
-# FLASK
-# =====================================================
-
 app = Flask(__name__)
 
 # =====================================================
-# ENV
+# ENVIRONMENT
 # =====================================================
 
 load_dotenv()
@@ -31,7 +27,7 @@ supabase = create_client(
 )
 
 # =====================================================
-# LOCAL BACKUP DATABASE
+# LOCAL DATABASE
 # =====================================================
 
 DATA_FILE = "scada_auto_save.json"
@@ -42,7 +38,7 @@ form_db = {}
 rca_db = {}
 
 # =====================================================
-# LOAD LOCAL DATA
+# LOAD DATA
 # =====================================================
 
 def load_data():
@@ -79,7 +75,7 @@ def load_data():
             )
 
 # =====================================================
-# SAVE LOCAL BACKUP
+# SAVE DATA
 # =====================================================
 
 def save_data():
@@ -89,17 +85,14 @@ def save_data():
         json.dump({
 
             "formula_db": formula_db,
-
             "param_db": param_db,
-
             "form_db": form_db,
-
             "rca_db": rca_db
 
         }, f, indent=4)
 
 # =====================================================
-# PARAM EXTRACTOR
+# EXTRACT PARAMETERS
 # =====================================================
 
 def extract_params(eq):
@@ -111,9 +104,7 @@ def extract_params(eq):
         parsed = sp.sympify(expr)
 
         return sorted([
-
             str(s)
-
             for s in parsed.free_symbols
         ])
 
@@ -145,28 +136,21 @@ def safe_solver(eq_str, inputs):
         }
 
         lhs_expr = sp.sympify(
-
             lhs.strip(),
-
             locals=symbols
         )
 
         rhs_expr = sp.sympify(
-
             rhs.strip(),
-
             locals=symbols
         )
 
         eq = sp.Eq(
-
             lhs_expr,
-
             rhs_expr
         )
 
         known = {}
-
         unknown = []
 
         for k in all_names:
@@ -187,18 +171,13 @@ def safe_solver(eq_str, inputs):
 
                     if "=" in clean_val:
 
-                        clean_val = (
-                            clean_val
-                            .split("=")[-1]
-                            .strip()
-                        )
+                        clean_val = clean_val.split("=")[-1].strip()
 
                     known[
                         symbols[k]
                     ] = float(clean_val)
 
                 except:
-
                     pass
 
         # =================================================
@@ -210,9 +189,7 @@ def safe_solver(eq_str, inputs):
             target = unknown[0]
 
             sol = sp.solve(
-
                 eq.subs(known),
-
                 target
             )
 
@@ -234,7 +211,6 @@ def safe_solver(eq_str, inputs):
             result = eq.subs(known)
 
             if result == True:
-
                 return "Equation satisfied"
 
             return str(result)
@@ -257,116 +233,15 @@ def safe_solver(eq_str, inputs):
         return f"Error: {str(e)}"
 
 # =====================================================
-# SYNC SUPABASE
-# =====================================================
-
-def sync_from_supabase():
-
-    global param_db
-    global formula_db
-    global form_db
-
-    try:
-
-        # =============================================
-        # PARAMETERS
-        # =============================================
-
-        params = supabase.table(
-            "parameters"
-        ).select("*").execute()
-
-        param_db = {}
-
-        for p in params.data:
-
-            param_db[p["key"]] = {
-
-                "name": p["name"],
-
-                "unit": p["unit"]
-            }
-
-        # =============================================
-        # FORMULAS
-        # =============================================
-
-        formulas = supabase.table(
-            "formulas"
-        ).select("*").execute()
-
-        formula_db = []
-
-        for f in formulas.data:
-
-            formula_db.append({
-
-                "name": f["name"],
-
-                "eq": f["equation"],
-
-                "params": extract_params(
-                    f["equation"]
-                )
-            })
-
-        # =============================================
-        # FORMS
-        # =============================================
-
-        forms = supabase.table(
-            "forms"
-        ).select("*").execute()
-
-        form_db = {}
-
-        for f in forms.data:
-
-            form_db[
-                f["form_name"]
-            ] = f["form_data"]
-
-    except Exception as e:
-
-        print(
-            "SUPABASE LOAD ERROR:",
-            str(e)
-        )
-
-# =====================================================
 # HOME
 # =====================================================
 
 @app.route("/")
 def home():
 
-    sync_from_supabase()
-
     return render_template(
-
-        "index.html",
-
-        formulas=formula_db,
-
-        parameters=param_db,
-
-        forms=form_db,
-
-        rca=rca_db
+        "index.html"
     )
-
-# =====================================================
-# TEST
-# =====================================================
-
-@app.route("/test")
-def test():
-
-    data = supabase.table(
-        "parameters"
-    ).select("*").execute()
-
-    return jsonify(data.data)
 
 # =====================================================
 # GET DATABASE
@@ -374,8 +249,6 @@ def test():
 
 @app.route("/get_database")
 def get_database():
-
-    sync_from_supabase()
 
     return jsonify({
 
@@ -401,44 +274,16 @@ def add_parameter():
 
     key = data["key"]
 
-    name = data["name"]
-
-    unit = data["unit"]
-
     param_db[key] = {
 
-        "name": name,
+        "name": data["name"],
 
-        "unit": unit
+        "unit": data["unit"]
     }
-
-    try:
-
-        supabase.table(
-            "parameters"
-        ).upsert({
-
-            "key": key,
-
-            "name": name,
-
-            "unit": unit
-
-        }).execute()
-
-    except Exception as e:
-
-        return jsonify({
-
-            "status":"error",
-
-            "message":str(e)
-        })
 
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
 
@@ -459,25 +304,9 @@ def delete_parameter():
 
         del param_db[key]
 
-    try:
-
-        supabase.table(
-            "parameters"
-        ).delete().eq(
-
-            "key",
-            key
-
-        ).execute()
-
-    except Exception as e:
-
-        print(e)
-
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
 
@@ -523,31 +352,9 @@ def add_formula():
             "params": params
         })
 
-    try:
-
-        supabase.table(
-            "formulas"
-        ).upsert({
-
-            "name": name,
-
-            "equation": eq
-
-        }).execute()
-
-    except Exception as e:
-
-        return jsonify({
-
-            "status":"error",
-
-            "message":str(e)
-        })
-
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
 
@@ -571,45 +378,14 @@ def delete_formula():
         if f["name"] != name
     ]
 
-    try:
-
-        supabase.table(
-            "formulas"
-        ).delete().eq(
-
-            "name",
-            name
-
-        ).execute()
-
-    except Exception as e:
-
-        print(e)
-
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
 
 # =====================================================
-# GET FORMULA
-# =====================================================
-
-@app.route("/get_formula/<name>")
-def get_formula(name):
-
-    for f in formula_db:
-
-        if f["name"] == name:
-
-            return jsonify(f)
-
-    return jsonify({})
-
-# =====================================================
-# SOLVER
+# SOLVE
 # =====================================================
 
 @app.route("/solve", methods=["POST"])
@@ -622,14 +398,11 @@ def solve():
     values = data["values"]
 
     result = safe_solver(
-
         equation,
-
         values
     )
 
     return jsonify({
-
         "result": result
     })
 
@@ -650,44 +423,11 @@ def save_form():
 
     form_db[form_name] = rows
 
-    try:
-
-        supabase.table(
-            "forms"
-        ).upsert({
-
-            "form_name": form_name,
-
-            "form_data": rows
-
-        }).execute()
-
-    except Exception as e:
-
-        return jsonify({
-
-            "status":"error",
-
-            "message":str(e)
-        })
-
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
-
-# =====================================================
-# LOAD FORM
-# =====================================================
-
-@app.route("/load_form/<name>")
-def load_form(name):
-
-    rows = form_db.get(name, [])
-
-    return jsonify(rows)
 
 # =====================================================
 # DELETE FORM
@@ -706,25 +446,9 @@ def delete_form():
 
         del form_db[name]
 
-    try:
-
-        supabase.table(
-            "forms"
-        ).delete().eq(
-
-            "form_name",
-            name
-
-        ).execute()
-
-    except Exception as e:
-
-        print(e)
-
     save_data()
 
     return jsonify({
-
         "status":"deleted"
     })
 
@@ -744,80 +468,41 @@ def save_rca():
         ""
     )
 
-    rca_data = {
+    rca_db[parameter] = {
 
-        "parameter":
-            parameter,
+        "parameter": parameter,
 
-        "cause_parameter":
-            data.get(
-                "cause_parameter",
-                ""
-            ),
+        "cause_parameter": data.get(
+            "cause_parameter",
+            ""
+        ),
 
-        "high":
-            data.get(
-                "high",
-                ""
-            ),
+        "design": data.get(
+            "design",
+            ""
+        ),
 
-        "low":
-            data.get(
-                "low",
-                ""
-            ),
+        "cause": data.get(
+            "cause",
+            ""
+        ),
 
-        "design":
-            data.get(
-                "design",
-                ""
-            ),
+        "high": data.get(
+            "high",
+            ""
+        ),
 
-        "cause":
-            data.get(
-                "cause",
-                ""
-            )
+        "low": data.get(
+            "low",
+            ""
+        )
     }
-
-    # LOCAL MEMORY
-
-    rca_db[parameter] = rca_data
-
-    # SUPABASE SAVE
-
-    try:
-
-        supabase.table(
-            "rca"
-        ).upsert(
-            rca_data
-        ).execute()
-
-    except Exception as e:
-
-        return jsonify({
-
-            "status":"error",
-
-            "message":str(e)
-        })
 
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
-
-# =====================================================
-# GET RCA
-# =====================================================
-
-@app.route("/get_rca")
-def get_rca():
-
-    return jsonify(rca_db)
 
 # =====================================================
 # DELETE RCA
@@ -839,7 +524,6 @@ def delete_rca():
     save_data()
 
     return jsonify({
-
         "status":"ok"
     })
 
@@ -850,8 +534,6 @@ def delete_rca():
 if __name__ == "__main__":
 
     load_data()
-
-    sync_from_supabase()
 
     app.run(
 
