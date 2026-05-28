@@ -739,14 +739,69 @@ def save_rca():
 
     data = request.json
 
-    parameter = data["parameter"]
+    parameter = data.get(
+        "parameter",
+        ""
+    )
 
-    rca_db[parameter] = {
+    rca_data = {
 
-        "high": data["high"],
+        "parameter":
+            parameter,
 
-        "low": data["low"]
+        "cause_parameter":
+            data.get(
+                "cause_parameter",
+                ""
+            ),
+
+        "high":
+            data.get(
+                "high",
+                ""
+            ),
+
+        "low":
+            data.get(
+                "low",
+                ""
+            ),
+
+        "design":
+            data.get(
+                "design",
+                ""
+            ),
+
+        "cause":
+            data.get(
+                "cause",
+                ""
+            )
     }
+
+    # LOCAL MEMORY
+
+    rca_db[parameter] = rca_data
+
+    # SUPABASE SAVE
+
+    try:
+
+        supabase.table(
+            "rca"
+        ).upsert(
+            rca_data
+        ).execute()
+
+    except Exception as e:
+
+        return jsonify({
+
+            "status":"error",
+
+            "message":str(e)
+        })
 
     save_data()
 

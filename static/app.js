@@ -1271,11 +1271,16 @@ function renderRCA(data){
     }
 }
 
-async function saveRCA(){
+async function saveRCA() {
 
     const parameter =
         document.getElementById(
             "rcaParam"
+        ).value;
+
+    const cause_parameter =
+        document.getElementById(
+            "rcaCauseParam"
         ).value;
 
     const high =
@@ -1288,28 +1293,116 @@ async function saveRCA(){
             "lowReasons"
         ).value;
 
-    await fetch("/save_rca", {
+    const design =
+        document.getElementById(
+            "designReasons"
+        ).value;
 
-        method:"POST",
+    const cause =
+        document.getElementById(
+            "mainCause"
+        ).value;
 
-        headers:{
-            "Content-Type":
-            "application/json"
-        },
+    if (!parameter) {
 
-        body:JSON.stringify({
+        alert("Enter parameter");
 
-            parameter:parameter,
+        return;
+    }
 
-            high:high,
+    const res = await fetch(
 
-            low:low
-        })
-    });
+        "/save_rca",
 
-    refreshDatabase();
+        {
 
-    toast("RCA Saved");
+            method: "POST",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+
+                parameter:
+                    parameter,
+
+                cause_parameter:
+                    cause_parameter,
+
+                high:
+                    high,
+
+                low:
+                    low,
+
+                design:
+                    design,
+
+                cause:
+                    cause
+            })
+        }
+    );
+
+    const data = await res.json();
+
+    alert(data.status);
+
+    loadRCA();
+}
+
+async function loadRCA() {
+
+    const res = await fetch(
+        "/get_rca"
+    );
+
+    const data = await res.json();
+
+    const div =
+        document.getElementById(
+            "rcaList"
+        );
+
+    div.innerHTML = "";
+
+    for (const key in data) {
+
+        const r = data[key];
+
+        div.innerHTML += `
+
+            <div class="card p-2 mb-2">
+
+                <h5>
+                    ${r.parameter}
+                </h5>
+
+                <b>Cause Parameter:</b>
+                ${r.cause_parameter}
+                <br>
+
+                <b>HIGH:</b>
+                ${r.high}
+                <br>
+
+                <b>LOW:</b>
+                ${r.low}
+                <br>
+
+                <b>DESIGN:</b>
+                ${r.design}
+                <br>
+
+                <b>CAUSE:</b>
+                ${r.cause}
+
+            </div>
+        `;
+    }
 }
 
 async function deleteRCA(){
@@ -1428,5 +1521,5 @@ function filterRCA(){
 // =====================================================
 // STARTUP
 // =====================================================
-
+loadRCA();
 refreshDatabase();

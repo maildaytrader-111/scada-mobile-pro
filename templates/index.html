@@ -375,77 +375,104 @@
     <!-- ================================================= -->
     <!-- RCA TAB -->
     <!-- ================================================= -->
+<div class="tab-pane fade"
+     id="rcaTab">
 
-    <div class="tab-pane fade"
-         id="rcaTab">
+    <div class="card p-3">
 
-        <div class="card p-3">
+        <h4>RCA Intelligence</h4>
 
-            <h4>RCA Intelligence</h4>
+        <!-- PARAMETER -->
 
-            <input id="rcaParam"
-                   class="form-control mb-2"
-                   placeholder="Parameter">
+        <input id="rcaParam"
+               class="form-control mb-2"
+               placeholder="Parameter">
 
-            <textarea id="highReasons"
-                      class="form-control mb-2"
-                      placeholder="HIGH Causes (comma separated)"></textarea>
+        <!-- CAUSE PARAMETER -->
 
-            <textarea id="lowReasons"
-                      class="form-control mb-2"
-                      placeholder="LOW Causes (comma separated)"></textarea>
+        <input id="rcaCauseParam"
+               class="form-control mb-2"
+               placeholder="Cause Parameter">
 
-            <div class="d-flex gap-2 mb-3 flex-wrap">
+        <!-- HIGH -->
 
-                <button class="btn btn-danger"
-                        onclick="saveRCA()">
-                    Save RCA
-                </button>
+        <textarea id="highReasons"
+                  class="form-control mb-2"
+                  placeholder="HIGH Causes"></textarea>
 
-                <button class="btn btn-warning"
-                        onclick="clearRCAEditor()">
-                    Clear
-                </button>
+        <!-- LOW -->
 
-                <button class="btn btn-dark"
-                        onclick="deleteRCA()">
-                    Delete
-                </button>
+        <textarea id="lowReasons"
+                  class="form-control mb-2"
+                  placeholder="LOW Causes"></textarea>
 
-            </div>
+        <!-- DESIGN -->
 
-            <input id="rcaSearch"
-                   class="form-control mb-2"
-                   placeholder="Search Parameter or Cause"
-                   onkeyup="filterRCA()">
+        <textarea id="designReasons"
+                  class="form-control mb-2"
+                  placeholder="Design Notes"></textarea>
 
-            <select id="rcaMode"
-                    class="form-select mb-3">
+        <!-- ROOT CAUSE -->
 
-                <option>
-                    Parameter → Causes
-                </option>
+        <textarea id="mainCause"
+                  class="form-control mb-2"
+                  placeholder="Root Cause"></textarea>
 
-                <option>
-                    Cause → Parameters
-                </option>
+        <!-- BUTTONS -->
 
-            </select>
+        <div class="d-flex gap-2 mb-3 flex-wrap">
 
-            <div id="rcaList"></div>
+            <button class="btn btn-danger"
+                    onclick="saveRCA()">
+                Save RCA
+            </button>
 
-            <div id="rcaResults"
-                 class="mt-3"></div>
+            <button class="btn btn-warning"
+                    onclick="clearRCAEditor()">
+                Clear
+            </button>
+
+            <button class="btn btn-dark"
+                    onclick="deleteRCA()">
+                Delete
+            </button>
 
         </div>
+
+        <!-- SEARCH -->
+
+        <input id="rcaSearch"
+               class="form-control mb-2"
+               placeholder="Search Parameter or Cause"
+               onkeyup="filterRCA()">
+
+        <!-- MODE -->
+
+        <select id="rcaMode"
+                class="form-select mb-3">
+
+            <option>
+                Parameter → Causes
+            </option>
+
+            <option>
+                Cause → Parameters
+            </option>
+
+        </select>
+
+        <!-- LIST -->
+
+        <div id="rcaList"></div>
+
+        <!-- RESULTS -->
+
+        <div id="rcaResults"
+             class="mt-3"></div>
 
     </div>
 
 </div>
-```
-
-</div>
-
 <!-- Bootstrap -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
