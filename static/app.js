@@ -1271,7 +1271,7 @@ function renderRCA(data){
     }
 }
 
-async function saveRCA() {
+async function saveRCA(){
 
     const parameter =
         document.getElementById(
@@ -1280,7 +1280,17 @@ async function saveRCA() {
 
     const cause_parameter =
         document.getElementById(
-            "rcaCauseParam"
+            "causeParameter"
+        ).value;
+
+    const design =
+        document.getElementById(
+            "designValue"
+        ).value;
+
+    const cause =
+        document.getElementById(
+            "causeText"
         ).value;
 
     const high =
@@ -1293,65 +1303,96 @@ async function saveRCA() {
             "lowReasons"
         ).value;
 
-    const design =
+    await fetch("/save_rca", {
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
+
+        body:JSON.stringify({
+
+            parameter,
+            cause_parameter,
+            design,
+            cause,
+            high,
+            low
+        })
+    });
+
+    refreshDatabase();
+
+    alert("RCA Saved");
+}
+
+function rcaParameterChanged(){
+
+    const parameter =
         document.getElementById(
-            "designReasons"
+            "rcaParam"
         ).value;
 
-    const cause =
-        document.getElementById(
-            "mainCause"
-        ).value;
-
-    if (!parameter) {
-
-        alert("Enter parameter");
-
+    if(
+        !rcaDatabase[parameter]
+    ){
         return;
     }
 
-    const res = await fetch(
+    const data =
+        rcaDatabase[parameter];
 
-        "/save_rca",
+    document.getElementById(
+        "causeParameter"
+    ).value =
+        data.cause_parameter || "";
 
-        {
+    document.getElementById(
+        "designValue"
+    ).value =
+        data.design || "";
 
-            method: "POST",
+    document.getElementById(
+        "causeText"
+    ).value =
+        data.cause || "";
 
-            headers: {
+    document.getElementById(
+        "highReasons"
+    ).value =
+        data.high || "";
 
-                "Content-Type":
-                    "application/json"
-            },
+    document.getElementById(
+        "lowReasons"
+    ).value =
+        data.low || "";
+}
 
-            body: JSON.stringify({
+function causeParameterChanged(){
 
-                parameter:
-                    parameter,
+    const cp =
+        document.getElementById(
+            "causeParameter"
+        ).value;
 
-                cause_parameter:
-                    cause_parameter,
+    for(const p in rcaDatabase){
 
-                high:
-                    high,
+        if(
+            rcaDatabase[p]
+            .cause_parameter === cp
+        ){
 
-                low:
-                    low,
+            document.getElementById(
+                "rcaParam"
+            ).value = p;
 
-                design:
-                    design,
+            rcaParameterChanged();
 
-                cause:
-                    cause
-            })
+            return;
         }
-    );
-
-    const data = await res.json();
-
-    alert(data.status);
-
-    loadRCA();
+    }
 }
 
 async function loadRCA() {
