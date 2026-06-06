@@ -76,7 +76,7 @@ def save_data():
         }, f, indent=4)
 
 # =====================================================
-# PARAM EXTRACTOR
+# EXTRACT PARAMETERS
 # =====================================================
 
 def extract_params(eq):
@@ -169,7 +169,7 @@ def safe_solver(eq_str, inputs):
                     pass
 
         # =============================================
-        # ONE UNKNOWN
+        # SINGLE UNKNOWN
         # =============================================
 
         if len(unknown) == 1:
@@ -259,7 +259,7 @@ def get_database():
     })
 
 # =====================================================
-# ADD PARAMETER
+# ADD / UPDATE PARAMETER
 # =====================================================
 
 @app.route("/add_parameter", methods=["POST"])
@@ -286,7 +286,31 @@ def add_parameter():
     })
 
 # =====================================================
-# ADD FORMULA
+# DELETE PARAMETER
+# =====================================================
+
+@app.route("/delete_parameter", methods=["POST"])
+def delete_parameter():
+
+    global param_db
+
+    data = request.json
+
+    key = data["key"]
+
+    if key in param_db:
+
+        del param_db[key]
+
+    save_data()
+
+    return jsonify({
+
+        "status":"ok"
+    })
+
+# =====================================================
+# ADD / UPDATE FORMULA
 # =====================================================
 
 @app.route("/add_formula", methods=["POST"])
@@ -296,18 +320,71 @@ def add_formula():
 
     data = request.json
 
+    name = data["name"]
+
     eq = data["eq"]
 
-    formula = {
+    params = extract_params(eq)
 
-        "name": data["name"],
+    # =============================================
+    # UPDATE IF EXISTS
+    # =============================================
 
-        "eq": eq,
+    updated = False
 
-        "params": extract_params(eq)
-    }
+    for f in formula_db:
 
-    formula_db.append(formula)
+        if f["name"] == name:
+
+            f["eq"] = eq
+
+            f["params"] = params
+
+            updated = True
+
+            break
+
+    # =============================================
+    # NEW FORMULA
+    # =============================================
+
+    if not updated:
+
+        formula_db.append({
+
+            "name": name,
+
+            "eq": eq,
+
+            "params": params
+        })
+
+    save_data()
+
+    return jsonify({
+
+        "status":"ok"
+    })
+
+# =====================================================
+# DELETE FORMULA
+# =====================================================
+
+@app.route("/delete_formula", methods=["POST"])
+def delete_formula():
+
+    global formula_db
+
+    data = request.json
+
+    name = data["name"]
+
+    formula_db = [
+
+        f for f in formula_db
+
+        if f["name"] != name
+    ]
 
     save_data()
 
@@ -332,7 +409,7 @@ def get_formula(name):
     return jsonify({})
 
 # =====================================================
-# SOLVE
+# SOLVER
 # =====================================================
 
 @app.route("/solve", methods=["POST"])

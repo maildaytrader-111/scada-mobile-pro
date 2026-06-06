@@ -1,20 +1,28 @@
+// static/app.js
+
 // =====================================================
 // GLOBALS
 // =====================================================
 
 let currentFormula = null;
+
+let parameterData = {};
+
+let formulaData = [];
+
 let formRows = [];
+
 let rcaData = {};
 
 // =====================================================
-// LOAD DATABASE
+// INIT
 // =====================================================
 
 window.onload = async function(){
 
     await refreshDatabase();
 
-    loadRCA();
+    await loadRCA();
 };
 
 // =====================================================
@@ -29,19 +37,62 @@ async function refreshDatabase(){
     const db =
         await response.json();
 
-    renderParameters(db.parameters);
+    parameterData =
+        db.parameters;
 
-    renderFormulas(db.formulas);
+    formulaData =
+        db.formulas;
+
+    renderParameters(
+        parameterData
+    );
+
+    renderFormulas(
+        formulaData
+    );
+
+    updateFormulaDropdown(
+        formulaData
+    );
 }
 
 // =====================================================
-// RENDER PARAMETERS
+// UPDATE SOLVER DROPDOWN
 // =====================================================
 
-function renderParameters(parameters){
+function updateFormulaDropdown(formulas){
+
+    const dd =
+        document.getElementById(
+            "formulaSelect"
+        );
+
+    dd.innerHTML =
+        `<option value="">
+            Select Formula
+        </option>`;
+
+    formulas.forEach(f => {
+
+        dd.innerHTML += `
+
+            <option value="${f.name}">
+                ${f.name}
+            </option>
+        `;
+    });
+}
+
+// =====================================================
+// PARAMETER DATABASE
+// =====================================================
+
+function renderParameters(parameters, filter=""){
 
     const area =
-        document.getElementById("paramList");
+        document.getElementById(
+            "paramList"
+        );
 
     area.innerHTML = "";
 
@@ -50,82 +101,187 @@ function renderParameters(parameters){
         const p =
             parameters[key];
 
-        const div =
+        const text =
+            (
+                key + " " +
+                p.name + " " +
+                p.unit
+            ).toLowerCase();
+
+        if(
+            !text.includes(
+                filter.toLowerCase()
+            )
+        ){
+            continue;
+        }
+
+        const row =
             document.createElement("div");
 
-        div.className =
-            "card p-2 mt-2";
+        row.className =
+            "d-flex gap-2 mt-2";
 
-        div.innerHTML = `
+        // =========================================
+        // MAIN BUTTON
+        // =========================================
+
+        const btn =
+            document.createElement("button");
+
+        btn.className =
+            "btn btn-secondary flex-grow-1";
+
+        btn.innerHTML = `
 
             <b>${key}</b>
 
-            <div>
-                ${p.name}
-            </div>
+            (${p.unit})
 
-            <div>
-                Unit: ${p.unit}
-            </div>
+            <br>
+
+            ${p.name}
         `;
 
-        area.appendChild(div);
+        btn.onclick = () => {
+
+            loadParameterIntoEditor(
+                key
+            );
+        };
+
+        // =========================================
+        // DELETE
+        // =========================================
+
+        const del =
+            document.createElement("button");
+
+        del.className =
+            "btn btn-danger";
+
+        del.innerHTML =
+            "X";
+
+        del.onclick = async () => {
+
+            await fetch(
+
+                "/delete_parameter",
+
+                {
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        key:key
+                    })
+                }
+            );
+
+            refreshDatabase();
+        };
+
+        row.appendChild(btn);
+
+        row.appendChild(del);
+
+        area.appendChild(row);
     }
 }
 
 // =====================================================
-// RENDER FORMULAS
+// FILTER PARAMETERS
 // =====================================================
 
-function renderFormulas(formulas){
+function filterParameters(){
 
-    const area =
-        document.getElementById("formulaList");
+    const text =
+        document.getElementById(
+            "paramSearch"
+        ).value;
 
-    area.innerHTML = "";
-
-    formulas.forEach(f => {
-
-        const div =
-            document.createElement("div");
-
-        div.className =
-            "card p-2 mt-2";
-
-        div.innerHTML = `
-
-            <b>${f.name}</b>
-
-            <div>
-                ${f.eq}
-            </div>
-        `;
-
-        area.appendChild(div);
-    });
+    renderParameters(
+        parameterData,
+        text
+    );
 }
 
 // =====================================================
-// ADD PARAMETER
+// LOAD PARAMETER
+// =====================================================
+
+function loadParameterIntoEditor(key){
+
+    const p =
+        parameterData[key];
+
+    document.getElementById(
+        "paramKey"
+    ).value = key;
+
+    document.getElementById(
+        "paramName"
+    ).value = p.name;
+
+    document.getElementById(
+        "paramUnit"
+    ).value = p.unit;
+}
+
+// =====================================================
+// CLEAR PARAMETER
+// =====================================================
+
+function clearParameterEditor(){
+
+    document.getElementById(
+        "paramKey"
+    ).value = "";
+
+    document.getElementById(
+        "paramName"
+    ).value = "";
+
+    document.getElementById(
+        "paramUnit"
+    ).value = "";
+}
+
+// =====================================================
+// SAVE PARAMETER
 // =====================================================
 
 async function addParameter(){
 
     const key =
-        document.getElementById("paramKey").value;
+        document.getElementById(
+            "paramKey"
+        ).value;
 
     const name =
-        document.getElementById("paramName").value;
+        document.getElementById(
+            "paramName"
+        ).value;
 
     const unit =
-        document.getElementById("paramUnit").value;
+        document.getElementById(
+            "paramUnit"
+        ).value;
 
     await fetch("/add_parameter", {
 
         method:"POST",
 
         headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+            "application/json"
         },
 
         body:JSON.stringify({
@@ -138,29 +294,224 @@ async function addParameter(){
         })
     });
 
-    alert("Parameter Added");
+    clearParameterEditor();
 
-    location.reload();
+    refreshDatabase();
 }
 
 // =====================================================
-// ADD FORMULA
+// DELETE PARAMETER
+// =====================================================
+
+async function deleteParameter(){
+
+    const key =
+        document.getElementById(
+            "paramKey"
+        ).value;
+
+    if(!key){
+
+        alert("Select parameter");
+
+        return;
+    }
+
+    await fetch("/delete_parameter", {
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
+
+        body:JSON.stringify({
+
+            key:key
+        })
+    });
+
+    clearParameterEditor();
+
+    refreshDatabase();
+}
+
+// =====================================================
+// FORMULA DATABASE
+// =====================================================
+
+function renderFormulas(formulas, filter=""){
+
+    const area =
+        document.getElementById(
+            "formulaList"
+        );
+
+    area.innerHTML = "";
+
+    formulas.forEach(f => {
+
+        const text =
+            (
+                f.name + " " +
+                f.eq
+            ).toLowerCase();
+
+        if(
+            !text.includes(
+                filter.toLowerCase()
+            )
+        ){
+            return;
+        }
+
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "d-flex gap-2 mt-2";
+
+        // =========================================
+        // MAIN BUTTON
+        // =========================================
+
+        const btn =
+            document.createElement("button");
+
+        btn.className =
+            "btn btn-info flex-grow-1";
+
+        btn.innerHTML = `
+
+            <b>${f.name}</b>
+
+            <br>
+
+            ${f.eq}
+        `;
+
+        btn.onclick = () => {
+
+            loadFormulaIntoEditor(f);
+        };
+
+        // =========================================
+        // DELETE
+        // =========================================
+
+        const del =
+            document.createElement("button");
+
+        del.className =
+            "btn btn-danger";
+
+        del.innerHTML =
+            "X";
+
+        del.onclick = async () => {
+
+            await fetch(
+
+                "/delete_formula",
+
+                {
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        name:f.name
+                    })
+                }
+            );
+
+            refreshDatabase();
+        };
+
+        row.appendChild(btn);
+
+        row.appendChild(del);
+
+        area.appendChild(row);
+    });
+}
+
+// =====================================================
+// FILTER FORMULAS
+// =====================================================
+
+function filterFormulas(){
+
+    const text =
+        document.getElementById(
+            "formulaSearch"
+        ).value;
+
+    renderFormulas(
+        formulaData,
+        text
+    );
+}
+
+// =====================================================
+// LOAD FORMULA
+// =====================================================
+
+function loadFormulaIntoEditor(f){
+
+    document.getElementById(
+        "formulaName"
+    ).value = f.name;
+
+    document.getElementById(
+        "formulaEq"
+    ).value = f.eq;
+}
+
+// =====================================================
+// CLEAR FORMULA
+// =====================================================
+
+function clearFormulaEditor(){
+
+    document.getElementById(
+        "formulaName"
+    ).value = "";
+
+    document.getElementById(
+        "formulaEq"
+    ).value = "";
+}
+
+// =====================================================
+// SAVE FORMULA
 // =====================================================
 
 async function addFormula(){
 
     const name =
-        document.getElementById("formulaName").value;
+        document.getElementById(
+            "formulaName"
+        ).value;
 
     const eq =
-        document.getElementById("formulaEq").value;
+        document.getElementById(
+            "formulaEq"
+        ).value;
 
     await fetch("/add_formula", {
 
         method:"POST",
 
         headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+            "application/json"
         },
 
         body:JSON.stringify({
@@ -171,28 +522,72 @@ async function addFormula(){
         })
     });
 
-    alert("Formula Added");
+    clearFormulaEditor();
 
-    location.reload();
+    refreshDatabase();
 }
 
 // =====================================================
-// LOAD FORMULA
+// DELETE FORMULA
+// =====================================================
+
+async function deleteFormula(){
+
+    const name =
+        document.getElementById(
+            "formulaName"
+        ).value;
+
+    if(!name){
+
+        alert("Select formula");
+
+        return;
+    }
+
+    await fetch("/delete_formula", {
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
+
+        body:JSON.stringify({
+
+            name:name
+        })
+    });
+
+    clearFormulaEditor();
+
+    refreshDatabase();
+}
+
+// =====================================================
+// LOAD SOLVER FORMULA
 // =====================================================
 
 async function loadFormula(){
 
     const name =
-        document.getElementById("formulaSelect").value;
+        document.getElementById(
+            "formulaSelect"
+        ).value;
 
     const response =
-        await fetch("/get_formula/" + name);
+        await fetch(
+            "/get_formula/" + name
+        );
 
     currentFormula =
         await response.json();
 
     const area =
-        document.getElementById("solverInputs");
+        document.getElementById(
+            "solverInputs"
+        );
 
     area.innerHTML = "";
 
@@ -238,12 +633,14 @@ async function solveFormula(){
             method:"POST",
 
             headers:{
-                "Content-Type":"application/json"
+                "Content-Type":
+                "application/json"
             },
 
             body:JSON.stringify({
 
-                equation:currentFormula.eq,
+                equation:
+                currentFormula.eq,
 
                 values:values
             })
@@ -259,13 +656,15 @@ async function solveFormula(){
 }
 
 // =====================================================
-// ADD FORM ROW
+// FORM ENGINE
 // =====================================================
 
 function addFormRow(data=null){
 
     const area =
-        document.getElementById("formArea");
+        document.getElementById(
+            "formArea"
+        );
 
     const row =
         document.createElement("div");
@@ -310,14 +709,17 @@ function addFormRow(data=null){
 
     if(data){
 
-        row.querySelector(".rowType").value =
-            data.type;
+        row.querySelector(
+            ".rowType"
+        ).value = data.type;
 
-        row.querySelector(".rowName").value =
-            data.name;
+        row.querySelector(
+            ".rowName"
+        ).value = data.name;
 
-        row.querySelector(".rowValue").value =
-            data.value;
+        row.querySelector(
+            ".rowValue"
+        ).value = data.value;
     }
 
     formRows.push(row);
@@ -329,15 +731,6 @@ function addFormRow(data=null){
 
 async function solveForm(){
 
-    const dbResponse =
-        await fetch("/get_database");
-
-    const db =
-        await dbResponse.json();
-
-    const formulas =
-        db.formulas;
-
     const inputs = {};
 
     // PARAMETERS
@@ -345,13 +738,19 @@ async function solveForm(){
     formRows.forEach(row => {
 
         const type =
-            row.querySelector(".rowType").value;
+            row.querySelector(
+                ".rowType"
+            ).value;
 
         const name =
-            row.querySelector(".rowName").value;
+            row.querySelector(
+                ".rowName"
+            ).value;
 
         const value =
-            row.querySelector(".rowValue").value;
+            row.querySelector(
+                ".rowValue"
+            ).value;
 
         if(type === "Parameter"){
 
@@ -364,47 +763,54 @@ async function solveForm(){
     for(const row of formRows){
 
         const type =
-            row.querySelector(".rowType").value;
+            row.querySelector(
+                ".rowType"
+            ).value;
+
+        if(type !== "Formula")
+            continue;
 
         const name =
-            row.querySelector(".rowName").value;
+            row.querySelector(
+                ".rowName"
+            ).value;
 
         const valueBox =
-            row.querySelector(".rowValue");
+            row.querySelector(
+                ".rowValue"
+            );
 
-        if(type === "Formula"){
+        const formula =
+            formulaData.find(
+                f => f.name === name
+            );
 
-            const formula =
-                formulas.find(
-                    f => f.name === name
-                );
+        if(!formula)
+            continue;
 
-            if(!formula)
-                continue;
+        const response =
+            await fetch("/solve", {
 
-            const response =
-                await fetch("/solve", {
+                method:"POST",
 
-                    method:"POST",
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
 
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
+                body:JSON.stringify({
 
-                    body:JSON.stringify({
+                    equation:formula.eq,
 
-                        equation:formula.eq,
+                    values:inputs
+                })
+            });
 
-                        values:inputs
-                    })
-                });
+        const data =
+            await response.json();
 
-            const data =
-                await response.json();
-
-            valueBox.value =
-                data.result;
-        }
+        valueBox.value =
+            data.result;
     }
 }
 
@@ -415,7 +821,9 @@ async function solveForm(){
 async function saveForm(){
 
     const formName =
-        document.getElementById("formName").value;
+        document.getElementById(
+            "formName"
+        ).value;
 
     const rows = [];
 
@@ -424,13 +832,19 @@ async function saveForm(){
         rows.push({
 
             type:
-                row.querySelector(".rowType").value,
+            row.querySelector(
+                ".rowType"
+            ).value,
 
             name:
-                row.querySelector(".rowName").value,
+            row.querySelector(
+                ".rowName"
+            ).value,
 
             value:
-                row.querySelector(".rowValue").value
+            row.querySelector(
+                ".rowValue"
+            ).value
         });
     });
 
@@ -439,7 +853,8 @@ async function saveForm(){
         method:"POST",
 
         headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+            "application/json"
         },
 
         body:JSON.stringify({
@@ -456,16 +871,20 @@ async function saveForm(){
 }
 
 // =====================================================
-// LOAD SAVED FORM
+// LOAD FORM
 // =====================================================
 
 async function loadSavedForm(){
 
     const name =
-        document.getElementById("savedForms").value;
+        document.getElementById(
+            "savedForms"
+        ).value;
 
     const response =
-        await fetch("/load_form/" + name);
+        await fetch(
+            "/load_form/" + name
+        );
 
     const rows =
         await response.json();
@@ -489,33 +908,24 @@ async function loadSavedForm(){
 async function saveRCA(){
 
     const parameter =
-        document.getElementById("rcaParam")
-        .value
-        .trim();
-
-    if(!parameter){
-
-        alert("Enter parameter");
-
-        return;
-    }
+        document.getElementById(
+            "rcaParam"
+        ).value.trim();
 
     const high =
-        document.getElementById("highReasons")
-        .value
+        document.getElementById(
+            "highReasons"
+        ).value
         .split(",")
-
         .map(x => x.trim())
-
         .filter(x => x);
 
     const low =
-        document.getElementById("lowReasons")
-        .value
+        document.getElementById(
+            "lowReasons"
+        ).value
         .split(",")
-
         .map(x => x.trim())
-
         .filter(x => x);
 
     await fetch("/save_rca", {
@@ -523,7 +933,8 @@ async function saveRCA(){
         method:"POST",
 
         headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+            "application/json"
         },
 
         body:JSON.stringify({
@@ -535,8 +946,6 @@ async function saveRCA(){
             low:low
         })
     });
-
-    alert("RCA Saved");
 
     clearRCAEditor();
 
@@ -550,9 +959,9 @@ async function saveRCA(){
 async function deleteRCA(){
 
     const parameter =
-        document.getElementById("rcaParam")
-        .value
-        .trim();
+        document.getElementById(
+            "rcaParam"
+        ).value;
 
     if(!parameter){
 
@@ -566,7 +975,8 @@ async function deleteRCA(){
         method:"POST",
 
         headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+            "application/json"
         },
 
         body:JSON.stringify({
@@ -574,8 +984,6 @@ async function deleteRCA(){
             parameter:parameter
         })
     });
-
-    alert("RCA Deleted");
 
     clearRCAEditor();
 
@@ -617,21 +1025,26 @@ async function loadRCA(){
 }
 
 // =====================================================
-// RENDER RCA LIST
+// RENDER RCA
 // =====================================================
 
 function renderRCAList(filter=""){
 
     const area =
-        document.getElementById("rcaList");
+        document.getElementById(
+            "rcaList"
+        );
 
     area.innerHTML = "";
 
     const mode =
-        document.getElementById("rcaMode")
-        .value;
+        document.getElementById(
+            "rcaMode"
+        ).value;
 
-    // PARAMETER → CAUSES
+    // =============================================
+    // PARAMETER -> CAUSES
+    // =============================================
 
     if(mode === "Parameter → Causes"){
 
@@ -639,7 +1052,9 @@ function renderRCAList(filter=""){
 
             if(
                 !param.toLowerCase()
-                    .includes(filter.toLowerCase())
+                .includes(
+                    filter.toLowerCase()
+                )
             ){
                 continue;
             }
@@ -648,7 +1063,7 @@ function renderRCAList(filter=""){
                 document.createElement("div");
 
             row.className =
-                "d-flex gap-2 mt-1";
+                "d-flex gap-2 mt-2";
 
             const btn =
                 document.createElement("button");
@@ -661,7 +1076,9 @@ function renderRCAList(filter=""){
 
             btn.onclick = () => {
 
-                showParameterCauses(param);
+                showParameterCauses(
+                    param
+                );
             };
 
             const edit =
@@ -675,7 +1092,9 @@ function renderRCAList(filter=""){
 
             edit.onclick = () => {
 
-                loadRCAIntoEditor(param);
+                loadRCAIntoEditor(
+                    param
+                );
             };
 
             const del =
@@ -689,20 +1108,25 @@ function renderRCAList(filter=""){
 
             del.onclick = async () => {
 
-                await fetch("/delete_rca", {
+                await fetch(
 
-                    method:"POST",
+                    "/delete_rca",
 
-                    headers:{
-                        "Content-Type":
-                        "application/json"
-                    },
+                    {
 
-                    body:JSON.stringify({
+                        method:"POST",
 
-                        parameter:param
-                    })
-                });
+                        headers:{
+                            "Content-Type":
+                            "application/json"
+                        },
+
+                        body:JSON.stringify({
+
+                            parameter:param
+                        })
+                    }
+                );
 
                 loadRCA();
             };
@@ -717,20 +1141,25 @@ function renderRCAList(filter=""){
         }
     }
 
-    // CAUSE → PARAMETERS
+    // =============================================
+    // CAUSE -> PARAMETERS
+    // =============================================
 
     else{
 
-        const causes = new Set();
+        const causes =
+            new Set();
 
         for(const param in rcaData){
 
-            rcaData[param].high.forEach(
-                c => causes.add(c)
+            rcaData[param].high
+            .forEach(c =>
+                causes.add(c)
             );
 
-            rcaData[param].low.forEach(
-                c => causes.add(c)
+            rcaData[param].low
+            .forEach(c =>
+                causes.add(c)
             );
         }
 
@@ -738,7 +1167,9 @@ function renderRCAList(filter=""){
 
             if(
                 !cause.toLowerCase()
-                    .includes(filter.toLowerCase())
+                .includes(
+                    filter.toLowerCase()
+                )
             ){
                 return;
             }
@@ -747,14 +1178,16 @@ function renderRCAList(filter=""){
                 document.createElement("button");
 
             btn.className =
-                "btn btn-info w-100 mt-1";
+                "btn btn-info w-100 mt-2";
 
             btn.innerHTML =
                 cause;
 
             btn.onclick = () => {
 
-                showCauseParameters(cause);
+                showCauseParameters(
+                    cause
+                );
             };
 
             area.appendChild(btn);
@@ -769,14 +1202,15 @@ function renderRCAList(filter=""){
 function filterRCA(){
 
     const text =
-        document.getElementById("rcaSearch")
-        .value;
+        document.getElementById(
+            "rcaSearch"
+        ).value;
 
     renderRCAList(text);
 }
 
 // =====================================================
-// LOAD RCA INTO EDITOR
+// LOAD RCA EDITOR
 // =====================================================
 
 function loadRCAIntoEditor(param){
@@ -806,7 +1240,9 @@ function loadRCAIntoEditor(param){
 function showParameterCauses(param){
 
     const area =
-        document.getElementById("rcaResults");
+        document.getElementById(
+            "rcaResults"
+        );
 
     const data =
         rcaData[param];
@@ -854,7 +1290,9 @@ function showParameterCauses(param){
 function showCauseParameters(cause){
 
     const area =
-        document.getElementById("rcaResults");
+        document.getElementById(
+            "rcaResults"
+        );
 
     let html = `
 
@@ -868,28 +1306,32 @@ function showCauseParameters(cause){
     for(const param in rcaData){
 
         if(
-            rcaData[param].high.includes(cause)
+            rcaData[param].high
+            .includes(cause)
         ){
 
             html += `
 
                 <div class="mb-2">
 
-                    🔺 ${param} → HIGH
+                    🔺 ${param}
+                    → HIGH
 
                 </div>
             `;
         }
 
         if(
-            rcaData[param].low.includes(cause)
+            rcaData[param].low
+            .includes(cause)
         ){
 
             html += `
 
                 <div class="mb-2">
 
-                    🔻 ${param} → LOW
+                    🔻 ${param}
+                    → LOW
 
                 </div>
             `;
@@ -912,7 +1354,9 @@ document.addEventListener(
     () => {
 
         const mode =
-            document.getElementById("rcaMode");
+            document.getElementById(
+                "rcaMode"
+            );
 
         if(mode){
 
@@ -926,7 +1370,5 @@ document.addEventListener(
                 }
             );
         }
-
-        loadRCA();
     }
 );
