@@ -1,73 +1,75 @@
+<!-- templates/index.html -->
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>SCADA MOBILE PRO</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
+    <!-- Bootstrap -->
 
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
-          rel="stylesheet"/>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet">
 
     <style>
 
         body{
-            background:#111827;
+
+            background:#1e1e2f;
             color:white;
-            font-family:Arial;
+            padding:10px;
         }
 
         .card{
-            background:#1f2937;
+
+            background:#2d2d44;
+            color:white;
             border:none;
             border-radius:15px;
-            margin-bottom:20px;
         }
 
         .form-control,
         .form-select{
-            background:#374151;
+
+            background:#1b1b2d;
             color:white;
-            border:none;
+            border:1px solid #444;
         }
 
-        .table{
+        .form-control:focus,
+        .form-select:focus{
+
+            background:#1b1b2d;
             color:white;
         }
 
         .nav-tabs .nav-link{
+
             color:white;
         }
 
         .nav-tabs .nav-link.active{
-            background:#2563eb;
-            color:white;
+
+            background:#00c896;
+            color:black;
             border:none;
         }
 
-        .select2-container--default .select2-selection--single{
-            height:38px;
-            background:#374151;
-            border:none;
-            color:white;
+        .btn{
+
+            border-radius:10px;
         }
 
-        .select2-dropdown{
-            background:#1f2937;
-            color:white;
-        }
+        #solverResult{
 
-        .select2-search__field{
-            background:#374151 !important;
-            color:white !important;
+            min-height:80px;
+            white-space:pre-wrap;
         }
 
     </style>
@@ -76,37 +78,27 @@
 
 <body>
 
-<div class="container-fluid p-3">
+<div class="container-fluid">
 
-    <h2 class="text-center mb-4">
+    <h2 class="text-center mb-3">
+
         SCADA MOBILE PRO
+
     </h2>
 
-    <!-- ================================================= -->
-    <!-- NAVIGATION -->
-    <!-- ================================================= -->
+    <!-- ========================================= -->
+    <!-- TABS -->
+    <!-- ========================================= -->
 
-    <ul class="nav nav-tabs mb-4">
+    <ul class="nav nav-tabs mb-3">
 
         <li class="nav-item">
 
             <button class="nav-link active"
                     data-bs-toggle="tab"
-                    data-bs-target="#parametersTab">
+                    data-bs-target="#backendTab">
 
-                Parameters
-
-            </button>
-
-        </li>
-
-        <li class="nav-item">
-
-            <button class="nav-link"
-                    data-bs-toggle="tab"
-                    data-bs-target="#formulaTab">
-
-                Formulas
+                Backend
 
             </button>
 
@@ -150,310 +142,262 @@
 
     </ul>
 
-    <!-- ================================================= -->
-    <!-- TAB CONTENT -->
-    <!-- ================================================= -->
-
     <div class="tab-content">
 
-        <!-- ================================================= -->
-        <!-- PARAMETERS TAB -->
-        <!-- ================================================= -->
+        <!-- ========================================= -->
+        <!-- BACKEND TAB -->
+        <!-- ========================================= -->
 
         <div class="tab-pane fade show active"
-             id="parametersTab">
+             id="backendTab">
+
+            <!-- PARAMETER -->
+
+            <div class="card p-3 mb-3">
+
+                <h4>Parameters</h4>
+
+                <input id="paramKey"
+                       class="form-control mb-2"
+                       placeholder="Parameter Key">
+
+                <input id="paramName"
+                       class="form-control mb-2"
+                       placeholder="Parameter Name">
+
+                <input id="paramUnit"
+                       class="form-control mb-2"
+                       placeholder="Unit">
+
+                <button class="btn btn-success"
+                        onclick="addParameter()">
+
+                    Add Parameter
+
+                </button>
+
+                <hr>
+
+                <div id="paramList"></div>
+
+            </div>
+
+            <!-- FORMULA -->
 
             <div class="card p-3">
 
-                <div class="row">
+                <h4>Formulas</h4>
 
-                    <div class="col-md-4">
+                <input id="formulaName"
+                       class="form-control mb-2"
+                       placeholder="Formula Name">
 
-                        <input id="paramKey"
-                               class="form-control mb-2"
-                               placeholder="Parameter Key">
+                <input id="formulaEq"
+                       class="form-control mb-2"
+                       placeholder="Example: DP=K*FLOW">
 
-                        <input id="paramName"
-                               class="form-control mb-2"
-                               placeholder="Parameter Name">
+                <button class="btn btn-primary"
+                        onclick="addFormula()">
 
-                        <input id="paramUnit"
-                               class="form-control mb-2"
-                               placeholder="Unit">
+                    Add Formula
 
-                        <button class="btn btn-success w-100 mb-2"
-                                onclick="addParameter()">
+                </button>
 
-                            Save Parameter
+                <hr>
 
-                        </button>
-
-                        <button class="btn btn-danger w-100"
-                                onclick="deleteParameter()">
-
-                            Delete Parameter
-
-                        </button>
-
-                    </div>
-
-                    <div class="col-md-8">
-
-                        <input id="paramSearch"
-                               class="form-control mb-3"
-                               placeholder="Search Parameter"
-                               onkeyup="filterParameters()">
-
-                        <div id="paramList"></div>
-
-                    </div>
-
-                </div>
+                <div id="formulaList"></div>
 
             </div>
 
         </div>
 
-        <!-- ================================================= -->
-        <!-- FORMULA TAB -->
-        <!-- ================================================= -->
-
-        <div class="tab-pane fade"
-             id="formulaTab">
-
-            <div class="card p-3">
-
-                <div class="row">
-
-                    <div class="col-md-4">
-
-                        <input id="formulaName"
-                               class="form-control mb-2"
-                               placeholder="Formula Name">
-
-                        <textarea id="formulaEq"
-                                  class="form-control mb-2"
-                                  placeholder="Example: P = V * I"></textarea>
-
-                        <button class="btn btn-success w-100 mb-2"
-                                onclick="addFormula()">
-
-                            Save Formula
-
-                        </button>
-
-                        <button class="btn btn-danger w-100"
-                                onclick="deleteFormula()">
-
-                            Delete Formula
-
-                        </button>
-
-                    </div>
-
-                    <div class="col-md-8">
-
-                        <input id="formulaSearch"
-                               class="form-control mb-3"
-                               placeholder="Search Formula"
-                               onkeyup="filterFormulas()">
-
-                        <div id="formulaList"></div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- ================================================= -->
+        <!-- ========================================= -->
         <!-- SOLVER TAB -->
-        <!-- ================================================= -->
+        <!-- ========================================= -->
 
         <div class="tab-pane fade"
              id="solverTab">
 
             <div class="card p-3">
 
+                <h4>Engineering Solver</h4>
+
                 <select id="formulaSelect"
-                        class="form-select mb-3"
-                        onchange="loadFormula()">
+                        class="form-select mb-3">
+
+                    <option value="">
+                        Select Formula
+                    </option>
+
+                    {% for f in formulas %}
+
+                    <option value="{{f.name}}">
+                        {{f.name}}
+                    </option>
+
+                    {% endfor %}
 
                 </select>
 
-                <div id="solverInputs"></div>
+                <button class="btn btn-info mb-3"
+                        onclick="loadFormula()">
 
-                <button class="btn btn-primary mt-3"
-                        onclick="solveFormula()">
-
-                    Solve Formula
+                    Load Formula
 
                 </button>
 
-                <div id="solverResult"
-                     class="mt-3 fs-4"></div>
+                <div id="solverInputs"></div>
+
+                <button class="btn btn-success mt-3"
+                        onclick="solveFormula()">
+
+                    Solve
+
+                </button>
+
+                <div class="card p-3 mt-3"
+                     id="solverResult">
+
+                </div>
 
             </div>
 
         </div>
 
-        <!-- ================================================= -->
+        <!-- ========================================= -->
         <!-- FORM TAB -->
-        <!-- ================================================= -->
+        <!-- ========================================= -->
 
         <div class="tab-pane fade"
              id="formTab">
 
             <div class="card p-3">
 
-                <div class="row mb-3">
+                <h4>Engineering Forms</h4>
 
-                    <div class="col-md-4">
+                <input id="formName"
+                       class="form-control mb-2"
+                       placeholder="Form Name">
 
-                        <input id="formName"
-                               class="form-control"
-                               placeholder="Form Name">
+                <div class="d-flex gap-2 mb-3">
 
-                    </div>
+                    <button class="btn btn-info"
+                            onclick="addFormRow()">
 
-                    <div class="col-md-8 d-flex gap-2 flex-wrap">
+                        Add Row
 
-                        <button class="btn btn-success"
-                                onclick="saveForm()">
+                    </button>
 
-                            Save Form
+                    <button class="btn btn-success"
+                            onclick="solveForm()">
 
-                        </button>
+                        Solve Form
 
-                        <button class="btn btn-primary"
-                                onclick="addFormRow()">
+                    </button>
 
-                            Add Row
+                    <button class="btn btn-warning"
+                            onclick="saveForm()">
 
-                        </button>
+                        Save Form
 
-                        <button class="btn btn-warning"
-                                onclick="solveForm()">
-
-                            Solve Form
-
-                        </button>
-
-                        <button class="btn btn-danger"
-                                onclick="deleteForm()">
-
-                            Delete Form
-
-                        </button>
-
-                    </div>
+                    </button>
 
                 </div>
 
-                <input id="formSearch"
-                       class="form-control mb-3"
-                       placeholder="Search Forms"
-                       onkeyup="filterForms()">
+                <select id="savedForms"
+                        class="form-select mb-3"
+                        onchange="loadSavedForm()">
 
-                <div id="formList"
-                     class="mb-4"></div>
+                    <option value="">
+                        Load Saved Form
+                    </option>
 
-                <div class="table-responsive">
+                    {% for f in forms %}
 
-                    <table class="table table-bordered">
+                    <option value="{{f}}">
+                        {{f}}
+                    </option>
 
-                        <thead>
+                    {% endfor %}
 
-                        <tr>
+                </select>
 
-                            <th>Type</th>
-                            <th>Name</th>
-                            <th>Value</th>
-                            <th>Delete</th>
-
-                        </tr>
-
-                        </thead>
-
-                        <tbody id="formTableBody"></tbody>
-
-                    </table>
-
-                </div>
+                <div id="formArea"></div>
 
             </div>
 
         </div>
 
-        <!-- ================================================= -->
+        <!-- ========================================= -->
         <!-- RCA TAB -->
-        <!-- ================================================= -->
+        <!-- ========================================= -->
 
         <div class="tab-pane fade"
              id="rcaTab">
 
             <div class="card p-3">
 
-                <div class="row">
+                <h4>RCA Intelligence</h4>
 
-                    <div class="col-md-4">
+                <input id="rcaParam"
+                       class="form-control mb-2"
+                       placeholder="Parameter">
 
-                        <input id="rcaParam"
-                               class="form-control mb-2"
-                               placeholder="Parameter"
-                               onkeyup="rcaParameterChanged()">
+                <textarea id="highReasons"
+                          class="form-control mb-2"
+                          placeholder="HIGH Causes (comma separated)"></textarea>
 
-                        <input id="causeParameter"
-                               class="form-control mb-2"
-                               placeholder="Cause Parameter"
-                               onkeyup="causeParameterChanged()">
+                <textarea id="lowReasons"
+                          class="form-control mb-2"
+                          placeholder="LOW Causes (comma separated)"></textarea>
 
-                        <input id="designValue"
-                               class="form-control mb-2"
-                               placeholder="Design Value">
+                <div class="d-flex gap-2 mb-3">
 
-                        <textarea id="causeText"
-                                  class="form-control mb-2"
-                                  placeholder="Cause"></textarea>
+                    <button class="btn btn-danger"
+                            onclick="saveRCA()">
 
-                        <textarea id="highReasons"
-                                  class="form-control mb-2"
-                                  placeholder="High Causes"></textarea>
+                        Save RCA
 
-                        <textarea id="lowReasons"
-                                  class="form-control mb-2"
-                                  placeholder="Low Causes"></textarea>
+                    </button>
 
-                        <button class="btn btn-success w-100 mb-2"
-                                onclick="saveRCA()">
+                    <button class="btn btn-secondary"
+                            onclick="clearRCAEditor()">
 
-                            Save RCA
+                        Clear
 
-                        </button>
+                    </button>
 
-                        <button class="btn btn-danger w-100"
-                                onclick="deleteRCA()">
+                    <button class="btn btn-dark"
+                            onclick="deleteRCA()">
 
-                            Delete RCA
+                        Delete
 
-                        </button>
-
-                    </div>
-
-                    <div class="col-md-8">
-
-                        <input id="rcaSearch"
-                               class="form-control mb-3"
-                               placeholder="Search RCA"
-                               onkeyup="filterRCA()">
-
-                        <div id="rcaList"></div>
-
-                    </div>
+                    </button>
 
                 </div>
+
+                <input id="rcaSearch"
+                       class="form-control mb-2"
+                       placeholder="Search Parameter or Cause"
+                       onkeyup="filterRCA()">
+
+                <select id="rcaMode"
+                        class="form-select mb-3">
+
+                    <option>
+                        Parameter → Causes
+                    </option>
+
+                    <option>
+                        Cause → Parameters
+                    </option>
+
+                </select>
+
+                <div id="rcaList"></div>
+
+                <div id="rcaResults"
+                     class="mt-3"></div>
 
             </div>
 
@@ -463,7 +407,11 @@
 
 </div>
 
+<!-- Bootstrap -->
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- App JS -->
 
 <script src="/static/app.js"></script>
 

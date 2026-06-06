@@ -1,10 +1,5 @@
-# =====================================================
-# SCADA MOBILE PRO
-# COMPLETE UPGRADED APP.PY
-# =====================================================
+# app.py
 
-from supabase import create_client
-from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 import sympy as sp
 import json
@@ -13,21 +8,7 @@ import os
 app = Flask(__name__)
 
 # =====================================================
-# ENVIRONMENT
-# =====================================================
-
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-supabase = create_client(
-    SUPABASE_URL,
-    SUPABASE_KEY
-)
-
-# =====================================================
-# LOCAL DATABASE
+# DATABASE FILE
 # =====================================================
 
 DATA_FILE = "scada_auto_save.json"
@@ -38,7 +19,7 @@ form_db = {}
 rca_db = {}
 
 # =====================================================
-# LOAD DATA
+# LOAD DATABASE
 # =====================================================
 
 def load_data():
@@ -75,7 +56,7 @@ def load_data():
             )
 
 # =====================================================
-# SAVE DATA
+# SAVE DATABASE
 # =====================================================
 
 def save_data():
@@ -85,14 +66,17 @@ def save_data():
         json.dump({
 
             "formula_db": formula_db,
+
             "param_db": param_db,
+
             "form_db": form_db,
+
             "rca_db": rca_db
 
         }, f, indent=4)
 
 # =====================================================
-# EXTRACT PARAMETERS
+# PARAM EXTRACTOR
 # =====================================================
 
 def extract_params(eq):
@@ -104,7 +88,9 @@ def extract_params(eq):
         parsed = sp.sympify(expr)
 
         return sorted([
+
             str(s)
+
             for s in parsed.free_symbols
         ])
 
@@ -113,7 +99,7 @@ def extract_params(eq):
         return []
 
 # =====================================================
-# SAFE SOLVER
+# SMART SOLVER
 # =====================================================
 
 def safe_solver(eq_str, inputs):
@@ -136,21 +122,28 @@ def safe_solver(eq_str, inputs):
         }
 
         lhs_expr = sp.sympify(
+
             lhs.strip(),
+
             locals=symbols
         )
 
         rhs_expr = sp.sympify(
+
             rhs.strip(),
+
             locals=symbols
         )
 
         eq = sp.Eq(
+
             lhs_expr,
+
             rhs_expr
         )
 
         known = {}
+
         unknown = []
 
         for k in all_names:
@@ -167,57 +160,52 @@ def safe_solver(eq_str, inputs):
 
                 try:
 
-                    clean_val = str(val)
-
-                    if "=" in clean_val:
-
-                        clean_val = clean_val.split("=")[-1].strip()
-
                     known[
                         symbols[k]
-                    ] = float(clean_val)
+                    ] = float(val)
 
                 except:
+
                     pass
 
-        # =================================================
-        # SINGLE UNKNOWN
-        # =================================================
+        # =============================================
+        # ONE UNKNOWN
+        # =============================================
 
         if len(unknown) == 1:
 
             target = unknown[0]
 
             sol = sp.solve(
+
                 eq.subs(known),
+
                 target
             )
 
             if sol:
 
-                return round(
-                    float(sol[0]),
-                    5
-                )
+                return f"{target} = {round(float(sol[0]), 5)}"
 
             return "No solution"
 
-        # =================================================
+        # =============================================
         # NO UNKNOWN
-        # =================================================
+        # =============================================
 
         elif len(unknown) == 0:
 
             result = eq.subs(known)
 
             if result == True:
+
                 return "Equation satisfied"
 
             return str(result)
 
-        # =================================================
+        # =============================================
         # MULTIPLE UNKNOWN
-        # =================================================
+        # =============================================
 
         else:
 
@@ -240,7 +228,16 @@ def safe_solver(eq_str, inputs):
 def home():
 
     return render_template(
-        "index.html"
+
+        "index.html",
+
+        formulas=formula_db,
+
+        parameters=param_db,
+
+        forms=form_db,
+
+        rca=rca_db
     )
 
 # =====================================================
@@ -284,29 +281,7 @@ def add_parameter():
     save_data()
 
     return jsonify({
-        "status":"ok"
-    })
 
-# =====================================================
-# DELETE PARAMETER
-# =====================================================
-
-@app.route("/delete_parameter", methods=["POST"])
-def delete_parameter():
-
-    global param_db
-
-    data = request.json
-
-    key = data["key"]
-
-    if key in param_db:
-
-        del param_db[key]
-
-    save_data()
-
-    return jsonify({
         "status":"ok"
     })
 
@@ -321,68 +296,40 @@ def add_formula():
 
     data = request.json
 
-    name = data["name"]
-
     eq = data["eq"]
 
-    params = extract_params(eq)
+    formula = {
 
-    updated = False
+        "name": data["name"],
+
+        "eq": eq,
+
+        "params": extract_params(eq)
+    }
+
+    formula_db.append(formula)
+
+    save_data()
+
+    return jsonify({
+
+        "status":"ok"
+    })
+
+# =====================================================
+# GET FORMULA
+# =====================================================
+
+@app.route("/get_formula/<name>")
+def get_formula(name):
 
     for f in formula_db:
 
         if f["name"] == name:
 
-            f["eq"] = eq
+            return jsonify(f)
 
-            f["params"] = params
-
-            updated = True
-
-            break
-
-    if not updated:
-
-        formula_db.append({
-
-            "name": name,
-
-            "eq": eq,
-
-            "params": params
-        })
-
-    save_data()
-
-    return jsonify({
-        "status":"ok"
-    })
-
-# =====================================================
-# DELETE FORMULA
-# =====================================================
-
-@app.route("/delete_formula", methods=["POST"])
-def delete_formula():
-
-    global formula_db
-
-    data = request.json
-
-    name = data["name"]
-
-    formula_db = [
-
-        f for f in formula_db
-
-        if f["name"] != name
-    ]
-
-    save_data()
-
-    return jsonify({
-        "status":"ok"
-    })
+    return jsonify({})
 
 # =====================================================
 # SOLVE
@@ -398,11 +345,14 @@ def solve():
     values = data["values"]
 
     result = safe_solver(
+
         equation,
+
         values
     )
 
     return jsonify({
+
         "result": result
     })
 
@@ -426,31 +376,20 @@ def save_form():
     save_data()
 
     return jsonify({
+
         "status":"ok"
     })
 
 # =====================================================
-# DELETE FORM
+# LOAD FORM
 # =====================================================
 
-@app.route("/delete_form", methods=["POST"])
-def delete_form():
+@app.route("/load_form/<name>")
+def load_form(name):
 
-    global form_db
+    rows = form_db.get(name, [])
 
-    data = request.json
-
-    name = data["name"]
-
-    if name in form_db:
-
-        del form_db[name]
-
-    save_data()
-
-    return jsonify({
-        "status":"deleted"
-    })
+    return jsonify(rows)
 
 # =====================================================
 # SAVE RCA
@@ -463,46 +402,30 @@ def save_rca():
 
     data = request.json
 
-    parameter = data.get(
-        "parameter",
-        ""
-    )
+    parameter = data["parameter"]
 
     rca_db[parameter] = {
 
-        "parameter": parameter,
+        "high": data["high"],
 
-        "cause_parameter": data.get(
-            "cause_parameter",
-            ""
-        ),
-
-        "design": data.get(
-            "design",
-            ""
-        ),
-
-        "cause": data.get(
-            "cause",
-            ""
-        ),
-
-        "high": data.get(
-            "high",
-            ""
-        ),
-
-        "low": data.get(
-            "low",
-            ""
-        )
+        "low": data["low"]
     }
 
     save_data()
 
     return jsonify({
+
         "status":"ok"
     })
+
+# =====================================================
+# GET RCA
+# =====================================================
+
+@app.route("/get_rca")
+def get_rca():
+
+    return jsonify(rca_db)
 
 # =====================================================
 # DELETE RCA
@@ -524,6 +447,7 @@ def delete_rca():
     save_data()
 
     return jsonify({
+
         "status":"ok"
     })
 
